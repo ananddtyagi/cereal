@@ -177,8 +177,12 @@ ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
         return transcription;
     } catch (error) {
         console.error('Transcription error:', error);
+<<<<<<< HEAD
         return null;
 >>>>>>> 928e5b3 (add basic transcribing)
+=======
+        throw error; // Propagate the error to the renderer
+>>>>>>> 7776839 (fix issue with file being sent for transcription to openai)
     }
 });
 

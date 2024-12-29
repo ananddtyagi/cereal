@@ -33,6 +33,9 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
         const startRecording = async () => {
             try {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 7776839 (fix issue with file being sent for transcription to openai)
                 const stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         channelCount: 1,
@@ -40,6 +43,7 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
                     }
                 });
 
+<<<<<<< HEAD
                 // Check supported MIME types
                 const supportedMimeTypes = MediaRecorder.isTypeSupported;
                 const mimeType = ['audio/wav', 'audio/webm'].find(type => supportedMimeTypes(type)) || 'audio/webm';
@@ -64,10 +68,18 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
 =======
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const mediaRecorder = new MediaRecorder(stream);
+=======
+                // Use webm format which is supported by Whisper
+                const mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm'
+                });
+>>>>>>> 7776839 (fix issue with file being sent for transcription to openai)
                 mediaRecorderRef.current = mediaRecorder;
 
-                mediaRecorder.ondataavailable = async (event) => {
+                let chunks: Blob[] = [];
+                mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) {
+<<<<<<< HEAD
                         setAudioChunks(prev => [...prev, event.data]);
 
                         // Convert the audio chunk to base64
@@ -127,6 +139,42 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
 
                 mediaRecorder.start(1000); // Capture in 3-second intervals
 >>>>>>> 928e5b3 (add basic transcribing)
+=======
+                        chunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    // Create a single blob from all chunks
+                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+
+                    // Convert to base64
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                        const base64Audio = (reader.result as string).split(',')[1];
+                        try {
+                            const transcription = await window.electron.transcribeAudio(base64Audio);
+                            if (transcription) {
+                                onTranscriptionUpdate(transcription);
+                            }
+                        } catch (error) {
+                            console.error('Transcription error:', error);
+                        }
+                    };
+                    reader.readAsDataURL(audioBlob);
+                    chunks = [];
+                };
+
+                mediaRecorder.start();
+
+                // Stop recording after 5 seconds to get a complete chunk
+                timeoutId = setTimeout(() => {
+                    if (mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                    }
+                }, 5000);
+
+>>>>>>> 7776839 (fix issue with file being sent for transcription to openai)
             } catch (error) {
                 console.error('Error starting recording:', error);
             }
