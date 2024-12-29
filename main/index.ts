@@ -3,6 +3,9 @@ import path from 'path';
 import isDev from 'electron-is-dev';
 import Store from 'electron-store';
 import { v4 as uuidv4 } from 'uuid';
+import { OpenAI } from 'openai';
+import fs from 'fs';
+import os from 'os';
 
 const store = new Store();
 
@@ -29,8 +32,6 @@ ipcMain.handle('get-all-notes', () => {
 
 ipcMain.handle('get-note', (_, uuid: string) => {
     const notes = store.get('notes', {}) as Record<string, string>;
-    console.log('Getting note:', uuid);
-    console.log('Note:', notes[uuid]);
     return notes[uuid] || null;
 });
 
@@ -48,6 +49,47 @@ ipcMain.handle('update-note', (_, uuid: string, content: string) => {
     notes[uuid] = content;
     store.set('notes', notes);
     return true;
+});
+
+// Handle audio transcription
+ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
+    const apiKey = store.get('apiKey');
+    if (!apiKey) {
+        return null;
+    }
+
+    try {
+        // Create a temporary file to store the audio
+        const tempDir = os.tmpdir();
+        const tempFile = path.join(tempDir, `recording-${Date.now()}.webm`);
+
+        // Convert base64 to file
+        const buffer = Buffer.from(base64Audio, 'base64');
+        fs.writeFileSync(tempFile, buffer);
+
+        // Create a readable stream from the temp file
+        const audioFile = fs.createReadStream(tempFile);
+
+        // Initialize OpenAI with the stored API key
+        const openai = new OpenAI({
+            apiKey: apiKey as string
+        });
+
+        // Call Whisper API
+        const transcription = await openai.audio.transcriptions.create({
+            file: audioFile,
+            model: 'whisper-1',
+            response_format: 'text'
+        });
+
+        // Clean up temp file
+        fs.unlinkSync(tempFile);
+
+        return transcription;
+    } catch (error) {
+        console.error('Transcription error:', error);
+        return null;
+    }
 });
 
 async function createWindow() {
