@@ -8,7 +8,7 @@ export default function Settings() {
     const [isEditing, setIsEditing] = useState(false);
     const [showKey, setShowKey] = useState(false);
     const [savedKey, setSavedKey] = useState<string | null>(null);
-    const [isElectron, setIsElectron] = useState(false);
+    const [isElectron, setIsElectron] = useState(true);
 
     useEffect(() => {
         // Debug logging
@@ -41,6 +41,8 @@ export default function Settings() {
                 windowDefined: typeof window !== 'undefined',
                 electronExists: !!window.electron
             });
+            setIsElectron(false);
+
         }
     }, []);
 
@@ -67,6 +69,12 @@ export default function Settings() {
         console.log('Edit button clicked');
         setIsEditing(true);
         setShowKey(true);
+    };
+
+    const handleCancel = () => {
+        setApiKey(savedKey || '');
+        setIsEditing(false);
+        setShowKey(false);
     };
 
     const displayKey = (key: string) => {
@@ -110,16 +118,27 @@ export default function Settings() {
                             />
 
                             {isEditing ? (
-                                <button
-                                    onClick={handleSave}
-                                    className="p-2 text-white bg-primary-500 rounded-md hover:bg-primary-600 transition-colors"
-                                >
-                                    <Save className="w-5 h-5" />
-                                </button>
+                                <>
+                                    <button
+                                        onClick={handleSave}
+                                        className="p-2 text-white bg-primary-500 rounded-md hover:bg-primary-600 transition-colors"
+                                        title="Save"
+                                    >
+                                        <Save className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                        onClick={handleCancel}
+                                        className="p-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                                        title="Cancel"
+                                    >
+                                        ✕
+                                    </button>
+                                </>
                             ) : (
                                 <button
                                     onClick={handleEdit}
                                     className="p-2 text-white bg-primary-500 rounded-md hover:bg-primary-600 transition-colors"
+                                    title="Edit"
                                 >
                                     <Edit2 className="w-5 h-5" />
                                 </button>
@@ -128,6 +147,7 @@ export default function Settings() {
                             <button
                                 onClick={() => setShowKey(!showKey)}
                                 className="p-2 text-primary-500 border border-primary-500 rounded-md hover:bg-primary-50 transition-colors"
+                                title={showKey ? "Hide API Key" : "Show API Key"}
                             >
                                 {showKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
