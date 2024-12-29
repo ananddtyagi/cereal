@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import isDev from 'electron-is-dev';
 import Store from 'electron-store';
+import { v4 as uuidv4 } from 'uuid';
 
 const store = new Store();
 
@@ -18,6 +19,34 @@ ipcMain.handle('get-api-key', () => {
 ipcMain.handle('set-api-key', (_, apiKey: string) => {
     console.log('Setting API key:', apiKey);
     store.set('apiKey', apiKey);
+    return true;
+});
+
+// Note operations
+ipcMain.handle('get-all-notes', () => {
+    return store.get('notes', {});
+});
+
+ipcMain.handle('get-note', (_, uuid: string) => {
+    const notes = store.get('notes', {}) as Record<string, string>;
+    console.log('Getting note:', uuid);
+    console.log('Note:', notes[uuid]);
+    return notes[uuid] || null;
+});
+
+ipcMain.handle('create-note', (_, content: string) => {
+    const uuid = uuidv4();
+    const notes = store.get('notes', {}) as Record<string, string>;
+    notes[uuid] = content;
+    store.set('notes', notes);
+    return uuid;
+});
+
+ipcMain.handle('update-note', (_, uuid: string, content: string) => {
+    const notes = store.get('notes', {}) as Record<string, string>;
+    if (!(uuid in notes)) return false;
+    notes[uuid] = content;
+    store.set('notes', notes);
     return true;
 });
 
