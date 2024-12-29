@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react';
-import { Home, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Settings, ChevronLeft, ChevronRight, Book } from 'lucide-react';
 
 export default function SidePanel() {
     const [isOpen, setIsOpen] = useState(true);
@@ -30,6 +30,13 @@ export default function SidePanel() {
                             >
                                 <Home className="w-5 h-5 min-w-5" />
                                 {isOpen && <span className="font-medium">Home</span>}
+                            </a>
+                            <a
+                                href="/notes"
+                                className="flex items-center space-x-3 p-3 rounded-lg hover:bg-primary-50 text-primary-900 transition-colors"
+                            >
+                                <Book className="w-5 h-5 min-w-5" />
+                                {isOpen && <span className="font-medium">Notes</span>}
                             </a>
                         </nav>
                     </div>
