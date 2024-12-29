@@ -88,7 +88,7 @@ ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
         return transcription;
     } catch (error) {
         console.error('Transcription error:', error);
-        return null;
+        throw error; // Propagate the error to the renderer
     }
 });
 
