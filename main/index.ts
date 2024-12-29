@@ -3,12 +3,18 @@ import path from 'path';
 import isDev from 'electron-is-dev';
 import Store from 'electron-store';
 import { v4 as uuidv4 } from 'uuid';
+<<<<<<< HEAD
 import fs from 'fs';
 import os from 'os';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
 import { startWhisperServer } from './startWhisperServer';
 import ffmpeg from 'fluent-ffmpeg';
+=======
+import { OpenAI } from 'openai';
+import fs from 'fs';
+import os from 'os';
+>>>>>>> 928e5b3 (add basic transcribing)
 
 const store = new Store();
 let serverPort = 9000; // Default port
@@ -42,6 +48,7 @@ ipcMain.handle('update-note', (_, uuid: string, content: string) => {
     return true;
 });
 
+<<<<<<< HEAD
 // Transcription operations
 ipcMain.handle('add-to-transcription', async (_, note_uuid: string, text: string) => {
     const transcriptions = store.get('transcriptions', {}) as Record<string, string>;
@@ -132,6 +139,46 @@ ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
         } catch (cleanupError) {
             console.error('Error during file cleanup:', cleanupError);
         }
+=======
+// Handle audio transcription
+ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
+    const apiKey = store.get('apiKey');
+    if (!apiKey) {
+        return null;
+    }
+
+    try {
+        // Create a temporary file to store the audio
+        const tempDir = os.tmpdir();
+        const tempFile = path.join(tempDir, `recording-${Date.now()}.webm`);
+
+        // Convert base64 to file
+        const buffer = Buffer.from(base64Audio, 'base64');
+        fs.writeFileSync(tempFile, buffer);
+
+        // Create a readable stream from the temp file
+        const audioFile = fs.createReadStream(tempFile);
+
+        // Initialize OpenAI with the stored API key
+        const openai = new OpenAI({
+            apiKey: apiKey as string
+        });
+
+        // Call Whisper API
+        const transcription = await openai.audio.transcriptions.create({
+            file: audioFile,
+            model: 'whisper-1',
+            response_format: 'text'
+        });
+
+        // Clean up temp file
+        fs.unlinkSync(tempFile);
+
+        return transcription;
+    } catch (error) {
+        console.error('Transcription error:', error);
+        return null;
+>>>>>>> 928e5b3 (add basic transcribing)
     }
 });
 

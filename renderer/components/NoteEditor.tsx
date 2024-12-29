@@ -18,16 +18,30 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     const [title, setTitle] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const [loading, setLoading] = useState(true);
+<<<<<<< HEAD
+=======
+    const [apiKey, setApiKey] = useState<string | null>(null);
+    const [transcripts, setTranscripts] = useState<string[]>([]);
+>>>>>>> 928e5b3 (add basic transcribing)
     const [currentTranscript, setCurrentTranscript] = useState('');
     const router = useRouter();
 
     useEffect(() => {
         loadNote();
+<<<<<<< HEAD
         // Load initial transcription
         if (noteUuid) {
             window.electron.getTranscription(noteUuid).then(setCurrentTranscript);
         }
+=======
+        checkApiKey();
+>>>>>>> 928e5b3 (add basic transcribing)
     }, [noteUuid]);
+
+    const checkApiKey = async () => {
+        const key = await window.electron.getApiKey();
+        setApiKey(key);
+    };
 
     const loadNote = async () => {
         if (!noteUuid) {
@@ -70,6 +84,7 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
         await window.electron.updateNote(noteUuid, noteData);
     };
 
+<<<<<<< HEAD
     const handleTranscriptionUpdate = async () => {
         // Just update the display, actual saving is handled in Transcription component
         const transcript = await window.electron.getTranscription(noteUuid);
@@ -77,6 +92,18 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     };
 
     const toggleRecording = () => {
+=======
+    const handleTranscriptionUpdate = (transcribedText: string) => {
+        setCurrentTranscript(prev => prev + (prev ? ' ' : '') + transcribedText);
+    };
+
+    const toggleRecording = () => {
+        if (isRecording && currentTranscript.trim()) {
+            // Save the current transcript when stopping
+            setTranscripts(prev => [...prev, currentTranscript.trim()]);
+            setCurrentTranscript('');
+        }
+>>>>>>> 928e5b3 (add basic transcribing)
         setIsRecording(!isRecording);
     };
 
@@ -127,20 +154,46 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
                             </div>
                         </div>
                     )}
+<<<<<<< HEAD
+=======
+
+                    {/* Previous Transcripts */}
+                    {transcripts.length > 0 && (
+                        <div className="space-y-2">
+                            <div className="text-sm text-gray-500 font-medium">Previous Transcripts</div>
+                            {transcripts.map((transcript, index) => (
+                                <div key={index} className="p-4 bg-white rounded-lg border border-gray-200">
+                                    <div className="text-gray-800">{transcript}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+>>>>>>> 928e5b3 (add basic transcribing)
                 </div>
 
                 <Transcription
                     isRecording={isRecording}
                     onTranscriptionUpdate={handleTranscriptionUpdate}
+<<<<<<< HEAD
                     note_uuid={noteUuid}
+=======
+>>>>>>> 928e5b3 (add basic transcribing)
                 />
 
                 <button
                     onClick={toggleRecording}
+<<<<<<< HEAD
                     title="Toggle recording"
                     className={`fixed bottom-8 right-8 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all 
                         ${isRecording ? 'bg-red-500' : 'bg-blue-500'} 
                         hover:scale-110`}
+=======
+                    disabled={!apiKey}
+                    title={!apiKey ? "Please add a valid OpenAI API key in settings" : "Toggle recording"}
+                    className={`fixed bottom-8 right-8 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all 
+                        ${isRecording ? 'bg-red-500' : 'bg-blue-500'} 
+                        ${!apiKey ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}`}
+>>>>>>> 928e5b3 (add basic transcribing)
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"

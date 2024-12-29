@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 interface TranscriptionProps {
     isRecording: boolean;
     onTranscriptionUpdate: (text: string) => void;
+<<<<<<< HEAD
     note_uuid: string;
 }
 
@@ -18,12 +19,20 @@ export default function Transcription({ isRecording, onTranscriptionUpdate, note
             console.error('Error updating transcription:', error);
         }
     };
+=======
+}
+
+export default function Transcription({ isRecording, onTranscriptionUpdate }: TranscriptionProps) {
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+>>>>>>> 928e5b3 (add basic transcribing)
 
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
 
         const startRecording = async () => {
             try {
+<<<<<<< HEAD
                 const stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         channelCount: 1,
@@ -52,11 +61,32 @@ export default function Transcription({ isRecording, onTranscriptionUpdate, note
                                 const partialTranscription = await window.electron.transcribeAudio(base64Audio);
                                 if (partialTranscription) {
                                     updateTranscription(partialTranscription);
+=======
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mediaRecorder = new MediaRecorder(stream);
+                mediaRecorderRef.current = mediaRecorder;
+
+                mediaRecorder.ondataavailable = async (event) => {
+                    if (event.data.size > 0) {
+                        setAudioChunks(prev => [...prev, event.data]);
+
+                        // Convert the audio chunk to base64
+                        const reader = new FileReader();
+                        reader.onloadend = async () => {
+                            const base64Audio = (reader.result as string).split(',')[1];
+
+                            try {
+                                // Send to main process for Whisper transcription
+                                const transcription = await window.electron.transcribeAudio(base64Audio);
+                                if (transcription) {
+                                    onTranscriptionUpdate(transcription);
+>>>>>>> 928e5b3 (add basic transcribing)
                                 }
                             } catch (error) {
                                 console.error('Transcription error:', error);
                             }
                         };
+<<<<<<< HEAD
                         reader.readAsDataURL(audioBlob);
                     }
                 };
@@ -90,6 +120,13 @@ export default function Transcription({ isRecording, onTranscriptionUpdate, note
                     }
                 }, 4000);
 
+=======
+                        reader.readAsDataURL(event.data);
+                    }
+                };
+
+                mediaRecorder.start(1000); // Capture in 3-second intervals
+>>>>>>> 928e5b3 (add basic transcribing)
             } catch (error) {
                 console.error('Error starting recording:', error);
             }

@@ -14,12 +14,15 @@ contextBridge.exposeInMainWorld('electron', {
     updateNote: async (uuid: string, content: string): Promise<boolean> => {
         return await ipcRenderer.invoke('update-note', uuid, content);
     },
+<<<<<<< HEAD
     addToTranscription: async (note_uuid: string, text: string): Promise<string> => {
         return await ipcRenderer.invoke('add-to-transcription', note_uuid, text);
     },
     getTranscription: async (note_uuid: string): Promise<string> => {
         return await ipcRenderer.invoke('get-transcription', note_uuid);
     },
+=======
+>>>>>>> 928e5b3 (add basic transcribing)
     transcribeAudio: async (base64Audio: string) => {
         return await ipcRenderer.invoke('transcribe-audio', base64Audio);
     },
