@@ -7,10 +7,18 @@
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "lib": [
+            "ES2020",
+            "DOM"
+        ],
+        "moduleResolution": "node"
     },
     "include": [
-        "main/**/*.ts"
+        "main/**/*.ts*",
+        "preload/**/*.ts*",
+        "renderer/**/*.ts*",
+        "renderer/**/*.tsx*"
     ],
     "exclude": [
         "node_modules",
