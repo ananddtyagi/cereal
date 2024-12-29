@@ -26,4 +26,7 @@ contextBridge.exposeInMainWorld('electron', {
     updateNote: async (uuid: string, content: string): Promise<boolean> => {
         return await ipcRenderer.invoke('update-note', uuid, content);
     },
+    transcribeAudio: async (base64Audio: string) => {
+        return await ipcRenderer.invoke('transcribe-audio', base64Audio);
+    },
 });
