@@ -5,6 +5,7 @@ export interface ElectronAPI {
     getNote: (uuid: string) => Promise<string | null>;
     createNote: (content?: string) => Promise<string>;
     updateNote: (uuid: string, content: string) => Promise<boolean>;
+    transcribeAudio: (base64Audio: string) => Promise<string | null>;
 }
 
 declare global {
