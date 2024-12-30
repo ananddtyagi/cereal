@@ -18,12 +18,15 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     const [title, setTitle] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [transcripts, setTranscripts] = useState<string[]>([]);
     const [currentTranscript, setCurrentTranscript] = useState('');
     const router = useRouter();
 
     useEffect(() => {
         loadNote();
+        // Load initial transcription
+        if (noteUuid) {
+            window.electron.getTranscription(noteUuid).then(setCurrentTranscript);
+        }
     }, [noteUuid]);
 
     const loadNote = async () => {
@@ -67,16 +70,13 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
         await window.electron.updateNote(noteUuid, noteData);
     };
 
-    const handleTranscriptionUpdate = (transcribedText: string) => {
-        setCurrentTranscript(prev => prev + (prev ? ' ' : '') + transcribedText);
+    const handleTranscriptionUpdate = async (transcribedText: string) => {
+        // Just update the display, actual saving is handled in Transcription component
+        const transcript = await window.electron.getTranscription(noteUuid);
+        setCurrentTranscript(transcript);
     };
 
     const toggleRecording = () => {
-        if (isRecording && currentTranscript.trim()) {
-            // Save the current transcript when stopping
-            setTranscripts(prev => [...prev, currentTranscript.trim()]);
-            setCurrentTranscript('');
-        }
         setIsRecording(!isRecording);
     };
 
@@ -127,23 +127,12 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
                             </div>
                         </div>
                     )}
-
-                    {/* Previous Transcripts */}
-                    {transcripts.length > 0 && (
-                        <div className="space-y-2">
-                            <div className="text-sm text-gray-500 font-medium">Previous Transcripts</div>
-                            {transcripts.map((transcript, index) => (
-                                <div key={index} className="p-4 bg-white rounded-lg border border-gray-200">
-                                    <div className="text-gray-800">{transcript}</div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </div>
 
                 <Transcription
                     isRecording={isRecording}
                     onTranscriptionUpdate={handleTranscriptionUpdate}
+                    note_uuid={noteUuid}
                 />
 
                 <button

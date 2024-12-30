@@ -42,6 +42,22 @@ ipcMain.handle('update-note', (_, uuid: string, content: string) => {
     return true;
 });
 
+// Transcription operations
+ipcMain.handle('add-to-transcription', async (_, note_uuid: string, text: string) => {
+    const transcriptions = store.get('transcriptions', {}) as Record<string, string>;
+    // Append the new text to existing transcription or create new one
+    transcriptions[note_uuid] = transcriptions[note_uuid]
+        ? transcriptions[note_uuid] + ' ' + text
+        : text;
+    store.set('transcriptions', transcriptions);
+    return transcriptions[note_uuid];
+});
+
+ipcMain.handle('get-transcription', async (_, note_uuid: string) => {
+    const transcriptions = store.get('transcriptions', {}) as Record<string, string>;
+    return transcriptions[note_uuid] || '';
+});
+
 // Handle audio transcription
 ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
     let webmFile: string | null = null;
