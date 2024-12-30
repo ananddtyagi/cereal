@@ -16,19 +16,6 @@ let serverPort = 9000; // Default port
 // Keep a global reference of the window object to avoid garbage collection
 let mainWindow: BrowserWindow | null = null;
 
-// Set up IPC handlers
-ipcMain.handle('get-api-key', () => {
-    const key = store.get('apiKey');
-    console.log('Getting API key:', key);
-    return key;
-});
-
-ipcMain.handle('set-api-key', (_, apiKey: string) => {
-    console.log('Setting API key:', apiKey);
-    store.set('apiKey', apiKey);
-    return true;
-});
-
 // Note operations
 ipcMain.handle('get-all-notes', () => {
     return store.get('notes', {});

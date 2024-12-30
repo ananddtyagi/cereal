@@ -18,20 +18,13 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     const [title, setTitle] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [apiKey, setApiKey] = useState<string | null>(null);
     const [transcripts, setTranscripts] = useState<string[]>([]);
     const [currentTranscript, setCurrentTranscript] = useState('');
     const router = useRouter();
 
     useEffect(() => {
         loadNote();
-        checkApiKey();
     }, [noteUuid]);
-
-    const checkApiKey = async () => {
-        const key = await window.electron.getApiKey();
-        setApiKey(key);
-    };
 
     const loadNote = async () => {
         if (!noteUuid) {
@@ -155,11 +148,10 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
 
                 <button
                     onClick={toggleRecording}
-                    disabled={!apiKey}
-                    title={!apiKey ? "Please add a valid OpenAI API key in settings" : "Toggle recording"}
+                    title="Toggle recording"
                     className={`fixed bottom-8 right-8 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all 
                         ${isRecording ? 'bg-red-500' : 'bg-blue-500'} 
-                        ${!apiKey ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}`}
+                        hover:scale-110`}
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
