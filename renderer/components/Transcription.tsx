@@ -88,7 +88,7 @@ export default function Transcription({ isRecording, onTranscriptionUpdate, note
                     if (mediaRecorder.state === 'recording') {
                         mediaRecorder.stop();
                     }
-                }, 3000);
+                }, 4000);
 
             } catch (error) {
                 console.error('Error starting recording:', error);
