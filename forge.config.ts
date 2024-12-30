@@ -1,9 +1,10 @@
-const config = {
+import type { ForgeConfig } from '@electron-forge/shared-types';
+
+const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
         extraResource: [
-            './transcription-server/whisper-server',
-            './transcription-server/models'
+            'transcription-server'
         ],
     },
     rebuildConfig: {},
@@ -27,4 +28,4 @@ const config = {
     ],
 };
 
-module.exports = config;
+export default config;
