@@ -3,11 +3,21 @@ import { useEffect, useRef, useState } from 'react';
 interface TranscriptionProps {
     isRecording: boolean;
     onTranscriptionUpdate: (text: string) => void;
+    note_uuid: string;
 }
 
-export default function Transcription({ isRecording, onTranscriptionUpdate }: TranscriptionProps) {
+export default function Transcription({ isRecording, onTranscriptionUpdate, note_uuid }: TranscriptionProps) {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const [_, setAudioChunks] = useState<Blob[]>([]);
+
+    const updateTranscription = async (text: string) => {
+        try {
+            await window.electron.addToTranscription(note_uuid, text);
+            onTranscriptionUpdate(text);
+        } catch (error) {
+            console.error('Error updating transcription:', error);
+        }
+    };
 
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
@@ -41,7 +51,7 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
                             try {
                                 const partialTranscription = await window.electron.transcribeAudio(base64Audio);
                                 if (partialTranscription) {
-                                    onTranscriptionUpdate(partialTranscription);
+                                    updateTranscription(partialTranscription);
                                 }
                             } catch (error) {
                                 console.error('Transcription error:', error);
@@ -62,7 +72,7 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
                         try {
                             const transcription = await window.electron.transcribeAudio(base64Audio);
                             if (transcription) {
-                                onTranscriptionUpdate(transcription);
+                                updateTranscription(transcription);
                             }
                         } catch (error) {
                             console.error('Transcription error:', error);
