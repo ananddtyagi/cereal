@@ -5,10 +5,15 @@ export interface ElectronAPI {
     updateNote: (uuid: string, content: string) => Promise<boolean>;
     transcribeAudio: (base64Audio: string) => Promise<string | null>;
 <<<<<<< HEAD
+<<<<<<< HEAD
     addToTranscription: (note_uuid: string, text: string) => Promise<string>;
     getTranscription: (note_uuid: string) => Promise<string>;
 =======
 >>>>>>> 7776839 (fix issue with file being sent for transcription to openai)
+=======
+    addToTranscription: (note_uuid: string, text: string) => Promise<string>;
+    getTranscription: (note_uuid: string) => Promise<string>;
+>>>>>>> 3032035 (save transcript)
 }
 
 declare global {

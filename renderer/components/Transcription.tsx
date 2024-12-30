@@ -4,6 +4,7 @@ interface TranscriptionProps {
     isRecording: boolean;
     onTranscriptionUpdate: (text: string) => void;
 <<<<<<< HEAD
+<<<<<<< HEAD
     note_uuid: string;
 }
 
@@ -20,9 +21,12 @@ export default function Transcription({ isRecording, onTranscriptionUpdate, note
         }
     };
 =======
+=======
+    note_uuid: string;
+>>>>>>> 3032035 (save transcript)
 }
 
-export default function Transcription({ isRecording, onTranscriptionUpdate }: TranscriptionProps) {
+export default function Transcription({ isRecording, onTranscriptionUpdate, note_uuid }: TranscriptionProps) {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 <<<<<<< HEAD
     const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
@@ -30,6 +34,15 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
 =======
     const [_, setAudioChunks] = useState<Blob[]>([]);
 >>>>>>> 68778f8 (rudimentary realtime audio transcription)
+
+    const updateTranscription = async (text: string) => {
+        try {
+            await window.electron.addToTranscription(note_uuid, text);
+            onTranscriptionUpdate(text);
+        } catch (error) {
+            console.error('Error updating transcription:', error);
+        }
+    };
 
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
@@ -113,8 +126,12 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
                             try {
                                 const partialTranscription = await window.electron.transcribeAudio(base64Audio);
                                 if (partialTranscription) {
+<<<<<<< HEAD
                                     onTranscriptionUpdate(partialTranscription);
 >>>>>>> efcd9ed (passing parital audio chunks for better results)
+=======
+                                    updateTranscription(partialTranscription);
+>>>>>>> 3032035 (save transcript)
                                 }
                             } catch (error) {
                                 console.error('Transcription error:', error);
@@ -138,6 +155,7 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
                             const transcription = await window.electron.transcribeAudio(base64Audio);
                             if (transcription) {
                                 updateTranscription(transcription);
+<<<<<<< HEAD
                             }
                         } catch (error) {
                             console.error('Transcription error:', error);
@@ -182,6 +200,8 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
                             const transcription = await window.electron.transcribeAudio(base64Audio);
                             if (transcription) {
                                 onTranscriptionUpdate(transcription);
+=======
+>>>>>>> 3032035 (save transcript)
                             }
                         } catch (error) {
                             console.error('Transcription error:', error);

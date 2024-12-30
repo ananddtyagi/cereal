@@ -58,6 +58,9 @@ ipcMain.handle('update-note', (_, uuid: string, content: string) => {
 });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3032035 (save transcript)
 // Transcription operations
 ipcMain.handle('add-to-transcription', async (_, note_uuid: string, text: string) => {
     const transcriptions = store.get('transcriptions', {}) as Record<string, string>;

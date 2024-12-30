@@ -20,12 +20,15 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     const [loading, setLoading] = useState(true);
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     const [apiKey, setApiKey] = useState<string | null>(null);
 =======
 >>>>>>> 6ad0218 (remove use of api key)
     const [transcripts, setTranscripts] = useState<string[]>([]);
 >>>>>>> 928e5b3 (add basic transcribing)
+=======
+>>>>>>> 3032035 (save transcript)
     const [currentTranscript, setCurrentTranscript] = useState('');
     const router = useRouter();
 
@@ -33,15 +36,21 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
         loadNote();
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3032035 (save transcript)
         // Load initial transcription
         if (noteUuid) {
             window.electron.getTranscription(noteUuid).then(setCurrentTranscript);
         }
+<<<<<<< HEAD
 =======
         checkApiKey();
 >>>>>>> 928e5b3 (add basic transcribing)
 =======
 >>>>>>> 6ad0218 (remove use of api key)
+=======
+>>>>>>> 3032035 (save transcript)
     }, [noteUuid]);
 
     const loadNote = async () => {
@@ -86,6 +95,7 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     const handleTranscriptionUpdate = async () => {
         // Just update the display, actual saving is handled in Transcription component
         const transcript = await window.electron.getTranscription(noteUuid);
@@ -105,6 +115,15 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
             setCurrentTranscript('');
         }
 >>>>>>> 928e5b3 (add basic transcribing)
+=======
+    const handleTranscriptionUpdate = async (transcribedText: string) => {
+        // Just update the display, actual saving is handled in Transcription component
+        const transcript = await window.electron.getTranscription(noteUuid);
+        setCurrentTranscript(transcript);
+    };
+
+    const toggleRecording = () => {
+>>>>>>> 3032035 (save transcript)
         setIsRecording(!isRecording);
     };
 
@@ -156,6 +175,7 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
                         </div>
                     )}
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
                     {/* Previous Transcripts */}
@@ -170,15 +190,21 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
                         </div>
                     )}
 >>>>>>> 928e5b3 (add basic transcribing)
+=======
+>>>>>>> 3032035 (save transcript)
                 </div>
 
                 <Transcription
                     isRecording={isRecording}
                     onTranscriptionUpdate={handleTranscriptionUpdate}
 <<<<<<< HEAD
+<<<<<<< HEAD
                     note_uuid={noteUuid}
 =======
 >>>>>>> 928e5b3 (add basic transcribing)
+=======
+                    note_uuid={noteUuid}
+>>>>>>> 3032035 (save transcript)
                 />
 
                 <button
