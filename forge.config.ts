@@ -1,10 +1,13 @@
-import type { ForgeConfig } from '@electron-forge/shared-types';
-
-const config: ForgeConfig = {
+const config = {
     packagerConfig: {
         asar: true,
         extraResource: [
+<<<<<<<< HEAD:forge.config.ts
             'transcription-server'
+========
+            './transcription-server/whisper-server',
+            './transcription-server/models'
+>>>>>>>> 68778f8 (rudimentary realtime audio transcription):forge.config.js
         ],
     },
     rebuildConfig: {},
@@ -28,4 +31,4 @@ const config: ForgeConfig = {
     ],
 };
 
-export default config;
+module.exports = config;

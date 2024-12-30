@@ -36,10 +36,14 @@
         "lucide-react": "^0.469.0",
         "next": "^14.0.0",
 <<<<<<< HEAD
+<<<<<<< HEAD
         "node-fetch": "^2.7.0",
 =======
         "openai": "^4.77.0",
 >>>>>>> 928e5b3 (add basic transcribing)
+=======
+        "node-fetch": "^2.7.0",
+>>>>>>> 68778f8 (rudimentary realtime audio transcription)
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "shadcn-ui": "^0.9.4",
