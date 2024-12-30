@@ -217,7 +217,7 @@ export default function Transcription({ isRecording, onTranscriptionUpdate, note
                     if (mediaRecorder.state === 'recording') {
                         mediaRecorder.stop();
                     }
-                }, 3000);
+                }, 4000);
 
 >>>>>>> 7776839 (fix issue with file being sent for transcription to openai)
             } catch (error) {
