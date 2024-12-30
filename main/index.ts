@@ -3,11 +3,15 @@ import path from 'path';
 import isDev from 'electron-is-dev';
 import Store from 'electron-store';
 import { v4 as uuidv4 } from 'uuid';
-import { OpenAI } from 'openai';
 import fs from 'fs';
 import os from 'os';
+import FormData from 'form-data';
+import fetch from 'node-fetch';
+import { startWhisperServer } from './startWhisperServer';
+import ffmpeg from 'fluent-ffmpeg';
 
 const store = new Store();
+let serverPort = 9000; // Default port
 
 // Keep a global reference of the window object to avoid garbage collection
 let mainWindow: BrowserWindow | null = null;
@@ -53,42 +57,78 @@ ipcMain.handle('update-note', (_, uuid: string, content: string) => {
 
 // Handle audio transcription
 ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
-    const apiKey = store.get('apiKey');
-    if (!apiKey) {
-        return null;
-    }
+    let webmFile: string | null = null;
+    let wavFile: string | null = null;
 
     try {
-        // Create a temporary file to store the audio
-        const tempDir = os.tmpdir();
-        const tempFile = path.join(tempDir, `recording-${Date.now()}.webm`);
+        // Create a recordings directory if it doesn't exist
+        const recordingsDir = path.join(__dirname, '..', 'recordings');
+        if (!fs.existsSync(recordingsDir)) {
+            fs.mkdirSync(recordingsDir, { recursive: true });
+        }
+        webmFile = path.join(recordingsDir, `recording-${Date.now()}.webm`);
+        wavFile = webmFile.replace('.webm', '.wav');
 
-        // Convert base64 to file
+        // Convert base64 to webm file
         const buffer = Buffer.from(base64Audio, 'base64');
-        fs.writeFileSync(tempFile, buffer);
+        console.log('Buffer length:', buffer.length);
+        fs.writeFileSync(webmFile, buffer);
 
-        // Create a readable stream from the temp file
-        const audioFile = fs.createReadStream(tempFile);
-
-        // Initialize OpenAI with the stored API key
-        const openai = new OpenAI({
-            apiKey: apiKey as string
+        // Convert WebM to WAV using ffmpeg
+        await new Promise((resolve, reject) => {
+            ffmpeg(webmFile!)
+                .toFormat('wav')
+                .outputOptions('-acodec pcm_s16le')  // 16-bit PCM encoding
+                .outputOptions('-ar 16000')          // 16kHz sample rate
+                .outputOptions('-ac 1')              // mono audio
+                .on('end', resolve)
+                .on('error', reject)
+                .save(wavFile!);
         });
 
-        // Call Whisper API
-        const transcription = await openai.audio.transcriptions.create({
-            file: audioFile,
-            model: 'whisper-1',
-            response_format: 'text'
+        // Create form data with the WAV file
+        console.log('WAV file:', wavFile);
+        const form = new FormData();
+        form.append('file', wavFile);
+        form.append('temperature', '0.0');
+        form.append('temperature_inc', '0.2');
+        form.append('response_format', 'json');
+
+        console.log('Sending transcription request to whisper server...');
+        const response = await fetch('http://127.0.0.1:9000/inference', {
+            method: 'POST',
+            body: form,
+            headers: form.getHeaders()
         });
 
-        // Clean up temp file
-        fs.unlinkSync(tempFile);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
 
-        return transcription;
+        // Parse the JSON response
+        const result = await response.json();
+        console.log('Transcription result:', result);
+
+        // Return the transcribed text
+        return result.text || '';
     } catch (error) {
         console.error('Transcription error:', error);
-        throw error; // Propagate the error to the renderer
+        throw error;
+    } finally {
+        // Clean up files in finally block to ensure they're always deleted
+        try {
+            if (webmFile && fs.existsSync(webmFile)) {
+                fs.unlinkSync(webmFile);
+                console.log('Cleaned up WebM file');
+            }
+            if (wavFile && fs.existsSync(wavFile)) {
+                fs.unlinkSync(wavFile);
+                console.log('Cleaned up WAV file');
+            }
+        } catch (cleanupError) {
+            console.error('Error during file cleanup:', cleanupError);
+        }
     }
 });
 
@@ -127,7 +167,16 @@ async function createWindow() {
 }
 
 // Create window when app is ready
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+    try {
+        console.log('Starting whisper server...');
+        await startWhisperServer();
+        await createWindow();
+    } catch (error) {
+        console.error('Failed to start whisper server:', error);
+        app.quit();
+    }
+});
 
 // Quit when all windows are closed
 app.on('window-all-closed', () => {

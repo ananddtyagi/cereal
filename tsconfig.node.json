@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
-        "target": "ES2020",
+        "composite": true,
+        "target": "ES2022",
         "module": "commonjs",
         "outDir": "dist",
         "rootDir": ".",
@@ -9,16 +10,14 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "lib": [
-            "ES2020",
+            "ES2022",
             "DOM"
         ],
         "moduleResolution": "node"
     },
     "include": [
         "main/**/*.ts*",
-        "preload/**/*.ts*",
-        "renderer/**/*.ts*",
-        "renderer/**/*.tsx*"
+        "preload/**/*.ts*"
     ],
     "exclude": [
         "node_modules",

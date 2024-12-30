@@ -7,7 +7,7 @@ interface TranscriptionProps {
 
 export default function Transcription({ isRecording, onTranscriptionUpdate }: TranscriptionProps) {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+    const [_, setAudioChunks] = useState<Blob[]>([]);
 
     useEffect(() => {
         let timeoutId: NodeJS.Timeout;
@@ -21,9 +21,13 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
                     }
                 });
 
-                // Use webm format which is supported by Whisper
+                // Check supported MIME types
+                const supportedMimeTypes = MediaRecorder.isTypeSupported;
+                const mimeType = ['audio/wav', 'audio/webm'].find(type => supportedMimeTypes(type)) || 'audio/webm';
+
+                // Use the supported format
                 const mediaRecorder = new MediaRecorder(stream, {
-                    mimeType: 'audio/webm'
+                    mimeType
                 });
                 mediaRecorderRef.current = mediaRecorder;
 
@@ -36,7 +40,7 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
 
                 mediaRecorder.onstop = async () => {
                     // Create a single blob from all chunks
-                    const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                    const audioBlob = new Blob(chunks, { type: mimeType });
 
                     // Convert to base64
                     const reader = new FileReader();
@@ -57,12 +61,11 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
 
                 mediaRecorder.start();
 
-                // Stop recording after 5 seconds to get a complete chunk
                 timeoutId = setTimeout(() => {
                     if (mediaRecorder.state === 'recording') {
                         mediaRecorder.stop();
                     }
-                }, 5000);
+                }, 3000);
 
             } catch (error) {
                 console.error('Error starting recording:', error);

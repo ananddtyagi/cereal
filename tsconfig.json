@@ -1,9 +1,9 @@
 {
     "compilerOptions": {
-        "target": "ES2020",
+        "target": "ES2022",
         "useDefineForClassFields": true,
         "lib": [
-            "ES2020",
+            "ES2022",
             "DOM",
             "DOM.Iterable"
         ],
@@ -31,16 +31,9 @@
     "include": [
         "renderer/**/*.ts",
         "renderer/**/*.tsx",
-        ".next/types/**/*.ts",
-        "main/**/*.ts",
-        "main/**/*.tsx"
+        ".next/types/**/*.ts"
     ],
     "exclude": [
-        "node_modules",
-    ],
-    "references": [
-        {
-            "path": "tsconfig.node.json"
-        }
+        "node_modules"
     ]
 }
