@@ -64,6 +64,7 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
 
                 let chunks: Blob[] = [];
                 mediaRecorder.ondataavailable = async (event) => {
+<<<<<<< HEAD
                     if (event.data.size > 0) {
                         const audioBlob = event.data;
                         const reader = new FileReader();
@@ -103,11 +104,23 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
                                 if (transcription) {
                                     onTranscriptionUpdate(transcription);
 >>>>>>> 928e5b3 (add basic transcribing)
+=======
+                    if (event.data.size > 0) {
+                        const audioBlob = event.data;
+                        const reader = new FileReader();
+                        reader.onloadend = async () => {
+                            const base64Audio = (reader.result as string).split(',')[1];
+                            try {
+                                const partialTranscription = await window.electron.transcribeAudio(base64Audio);
+                                if (partialTranscription) {
+                                    onTranscriptionUpdate(partialTranscription);
+>>>>>>> efcd9ed (passing parital audio chunks for better results)
                                 }
                             } catch (error) {
                                 console.error('Transcription error:', error);
                             }
                         };
+<<<<<<< HEAD
 <<<<<<< HEAD
                         reader.readAsDataURL(audioBlob);
                     }
@@ -151,6 +164,9 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
 >>>>>>> 928e5b3 (add basic transcribing)
 =======
                         chunks.push(event.data);
+=======
+                        reader.readAsDataURL(audioBlob);
+>>>>>>> efcd9ed (passing parital audio chunks for better results)
                     }
                 };
 
