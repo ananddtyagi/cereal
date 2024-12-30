@@ -35,5 +35,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+<<<<<<< HEAD
 # transcription-server
 transcription-server/models/*
+=======
+ranscription-server/models/
+>>>>>>> 590a8d0 (update gitignore)
