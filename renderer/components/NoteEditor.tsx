@@ -19,8 +19,11 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [loading, setLoading] = useState(true);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     const [apiKey, setApiKey] = useState<string | null>(null);
+=======
+>>>>>>> 6ad0218 (remove use of api key)
     const [transcripts, setTranscripts] = useState<string[]>([]);
 >>>>>>> 928e5b3 (add basic transcribing)
     const [currentTranscript, setCurrentTranscript] = useState('');
@@ -29,6 +32,7 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     useEffect(() => {
         loadNote();
 <<<<<<< HEAD
+<<<<<<< HEAD
         // Load initial transcription
         if (noteUuid) {
             window.electron.getTranscription(noteUuid).then(setCurrentTranscript);
@@ -36,12 +40,9 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
 =======
         checkApiKey();
 >>>>>>> 928e5b3 (add basic transcribing)
+=======
+>>>>>>> 6ad0218 (remove use of api key)
     }, [noteUuid]);
-
-    const checkApiKey = async () => {
-        const key = await window.electron.getApiKey();
-        setApiKey(key);
-    };
 
     const loadNote = async () => {
         if (!noteUuid) {
@@ -183,6 +184,7 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
                 <button
                     onClick={toggleRecording}
 <<<<<<< HEAD
+<<<<<<< HEAD
                     title="Toggle recording"
                     className={`fixed bottom-8 right-8 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all 
                         ${isRecording ? 'bg-red-500' : 'bg-blue-500'} 
@@ -194,6 +196,12 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
                         ${isRecording ? 'bg-red-500' : 'bg-blue-500'} 
                         ${!apiKey ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}`}
 >>>>>>> 928e5b3 (add basic transcribing)
+=======
+                    title="Toggle recording"
+                    className={`fixed bottom-8 right-8 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all 
+                        ${isRecording ? 'bg-red-500' : 'bg-blue-500'} 
+                        hover:scale-110`}
+>>>>>>> 6ad0218 (remove use of api key)
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
