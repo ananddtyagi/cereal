@@ -32,9 +32,22 @@ export default function Transcription({ isRecording, onTranscriptionUpdate }: Tr
                 mediaRecorderRef.current = mediaRecorder;
 
                 let chunks: Blob[] = [];
-                mediaRecorder.ondataavailable = (event) => {
+                mediaRecorder.ondataavailable = async (event) => {
                     if (event.data.size > 0) {
-                        chunks.push(event.data);
+                        const audioBlob = event.data;
+                        const reader = new FileReader();
+                        reader.onloadend = async () => {
+                            const base64Audio = (reader.result as string).split(',')[1];
+                            try {
+                                const partialTranscription = await window.electron.transcribeAudio(base64Audio);
+                                if (partialTranscription) {
+                                    onTranscriptionUpdate(partialTranscription);
+                                }
+                            } catch (error) {
+                                console.error('Transcription error:', error);
+                            }
+                        };
+                        reader.readAsDataURL(audioBlob);
                     }
                 };
 
