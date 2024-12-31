@@ -70,7 +70,7 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
         await window.electron.updateNote(noteUuid, noteData);
     };
 
-    const handleTranscriptionUpdate = async (transcribedText: string) => {
+    const handleTranscriptionUpdate = async () => {
         // Just update the display, actual saving is handled in Transcription component
         const transcript = await window.electron.getTranscription(noteUuid);
         setCurrentTranscript(transcript);
