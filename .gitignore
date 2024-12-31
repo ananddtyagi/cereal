@@ -35,4 +35,5 @@ yarn-error.log*
 # vercel
 .vercel
 
-ranscription-server/models/
+# transcription-server
+transcription-server/models/*
