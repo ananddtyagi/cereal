@@ -36,8 +36,13 @@ yarn-error.log*
 .vercel
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # transcription-server
 transcription-server/models/*
 =======
 ranscription-server/models/
 >>>>>>> 590a8d0 (update gitignore)
+=======
+# transcription-server
+transcription-server/models/*
+>>>>>>> 656ab1b (remove unncessary param in handleTranscriptionUpdate)

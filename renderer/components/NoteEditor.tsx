@@ -96,6 +96,7 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     const handleTranscriptionUpdate = async () => {
         // Just update the display, actual saving is handled in Transcription component
         const transcript = await window.electron.getTranscription(noteUuid);
@@ -117,6 +118,9 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
 >>>>>>> 928e5b3 (add basic transcribing)
 =======
     const handleTranscriptionUpdate = async (transcribedText: string) => {
+=======
+    const handleTranscriptionUpdate = async () => {
+>>>>>>> 656ab1b (remove unncessary param in handleTranscriptionUpdate)
         // Just update the display, actual saving is handled in Transcription component
         const transcript = await window.electron.getTranscription(noteUuid);
         setCurrentTranscript(transcript);
