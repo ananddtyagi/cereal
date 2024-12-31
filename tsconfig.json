@@ -31,7 +31,9 @@
     "include": [
         "renderer/**/*.ts",
         "renderer/**/*.tsx",
-        ".next/types/**/*.ts"
+        ".next/types/**/*.ts",
+        "main/**/*.ts",
+        "main/**/*.tsx"
     ],
     "exclude": [
         "node_modules"
