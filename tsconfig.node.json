@@ -17,7 +17,8 @@
     },
     "include": [
         "main/**/*.ts*",
-        "preload/**/*.ts*"
+        "preload/**/*.ts*",
+        "transcription-server/**/*"
     ],
     "exclude": [
         "node_modules",

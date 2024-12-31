@@ -15,8 +15,7 @@
         "dev": "concurrently -n=next,electron \"npm run dev:renderer\" \"npm run dev:electron\"",
         "build": "next build renderer && npm run build:electron",
         "build:electron": "tsc -p tsconfig.node.json",
-        "start": "electron .",
-        "package": "electron-forge package",
+        "package": "npm run build && electron-forge package",
         "make": "electron-forge make"
     },
     "dependencies": {
@@ -38,10 +37,6 @@
         "node-fetch": "^2.7.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
-        "shadcn-ui": "^0.9.4",
-        "tailwind-merge": "^2.6.0",
-        "tailwindcss-animate": "^1.0.7",
-        "uuid": "^11.0.3""react-dom": "^18.2.0",
         "shadcn-ui": "^0.9.4",
         "tailwind-merge": "^2.6.0",
         "tailwindcss-animate": "^1.0.7",
