@@ -1,8 +1,18 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
+import path from 'path';
 
 const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
+        extraResource: [
+            'transcription-server'
+        ],
+        files: [
+            "dist/**/*",
+            "renderer/out/**/*",
+            "transcription-server/**/*",
+            "package.json"
+        ]
     },
     rebuildConfig: {},
     makers: [
