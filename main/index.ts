@@ -4,7 +4,6 @@ import isDev from 'electron-is-dev';
 import Store from 'electron-store';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
-import os from 'os';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
 import { startWhisperServer } from './startWhisperServer';
@@ -104,9 +103,11 @@ ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
                 .on('error', reject)
                 .save(wavFile!);
         });
+        // Verify WAV file existence
+        console.log('Checking WAV file existence:', fs.existsSync(wavFile));
+        console.log('WAV file:', wavFile);
 
         // Create form data with the WAV file
-        console.log('WAV file:', wavFile);
         const form = new FormData();
         form.append('file', wavFile);
         form.append('temperature', '0.0');
@@ -134,21 +135,22 @@ ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
     } catch (error) {
         console.error('Transcription error:', error);
         throw error;
-    } finally {
-        // Clean up files in finally block to ensure they're always deleted
-        try {
-            if (webmFile && fs.existsSync(webmFile)) {
-                fs.unlinkSync(webmFile);
-                console.log('Cleaned up WebM file');
-            }
-            if (wavFile && fs.existsSync(wavFile)) {
-                fs.unlinkSync(wavFile);
-                console.log('Cleaned up WAV file');
-            }
-        } catch (cleanupError) {
-            console.error('Error during file cleanup:', cleanupError);
-        }
     }
+    // finally {
+    //     // Clean up files in finally block to ensure they're always deleted
+    //     try {
+    //         if (webmFile && fs.existsSync(webmFile)) {
+    //             fs.unlinkSync(webmFile);
+    //             console.log('Cleaned up WebM file');
+    //         }
+    //         if (wavFile && fs.existsSync(wavFile)) {
+    //             fs.unlinkSync(wavFile);
+    //             console.log('Cleaned up WAV file');
+    //         }
+    //     } catch (cleanupError) {
+    //         console.error('Error during file cleanup:', cleanupError);
+    //     }
+    // }
 });
 
 

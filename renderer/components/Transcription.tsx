@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface TranscriptionProps {
     isRecording: boolean;
@@ -8,7 +8,10 @@ interface TranscriptionProps {
 
 export default function Transcription({ isRecording, onTranscriptionUpdate, note_uuid }: TranscriptionProps) {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const [_, setAudioChunks] = useState<Blob[]>([]);
+    const accumulatedDataRef = useRef<Uint8Array>(new Uint8Array());
+    const headerDataRef = useRef<Uint8Array | null>(null);
+    const runningTranscriptionRef = useRef<string>('');
+    const processingRef = useRef<boolean>(false);
 
     const updateTranscription = async (text: string) => {
         try {
@@ -19,8 +22,66 @@ export default function Transcription({ isRecording, onTranscriptionUpdate, note
         }
     };
 
+    const concatenateUint8Arrays = (array1: Uint8Array, array2: Uint8Array): Uint8Array => {
+        const result = new Uint8Array(array1.length + array2.length);
+        result.set(array1, 0);
+        result.set(array2, array1.length);
+        return result;
+    };
+
+    const processAudioBuffer = async () => {
+        if (accumulatedDataRef.current.length === 0 || processingRef.current) return;
+
+        processingRef.current = true;
+        try {
+            const audioBlob = new Blob([accumulatedDataRef.current], {
+                type: mediaRecorderRef.current?.mimeType || 'audio/webm'
+            });
+            console.log("Audio blob size:", audioBlob.size);
+
+            const base64Audio = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    if (!reader.result) {
+                        reject(new Error('Failed to read audio data'));
+                        return;
+                    }
+                    const base64 = reader.result.toString().split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = () => reject(reader.error);
+                reader.readAsDataURL(audioBlob);
+            });
+
+            console.log("Transcribing audio");
+            const transcription = await window.electron.transcribeAudio(base64Audio);
+            console.log('Transcription received:', transcription);
+
+            if (transcription) {
+                if (transcription === runningTranscriptionRef.current) {
+                    console.log('Segment complete - resetting buffer');
+                    if (headerDataRef.current) {
+                        // Reset to header data only
+                        accumulatedDataRef.current = new Uint8Array(headerDataRef.current);
+                    } else {
+                        accumulatedDataRef.current = new Uint8Array();
+                    }
+                    runningTranscriptionRef.current = '';
+                } else {
+                    runningTranscriptionRef.current = transcription;
+                    console.log('Updating transcription on UI');
+                    await updateTranscription(transcription);
+                }
+            }
+        } catch (error) {
+            console.error('Transcription error:', error);
+        } finally {
+            processingRef.current = false;
+        }
+    };
+
     useEffect(() => {
-        let timeoutId: NodeJS.Timeout;
+        let processingInterval: NodeJS.Timeout;
 
         const startRecording = async () => {
             try {
@@ -31,64 +92,49 @@ export default function Transcription({ isRecording, onTranscriptionUpdate, note
                     }
                 });
 
-                // Check supported MIME types
                 const supportedMimeTypes = MediaRecorder.isTypeSupported;
                 const mimeType = ['audio/wav', 'audio/webm'].find(type => supportedMimeTypes(type)) || 'audio/webm';
 
-                // Use the supported format
-                const mediaRecorder = new MediaRecorder(stream, {
-                    mimeType
-                });
+                const mediaRecorder = new MediaRecorder(stream, { mimeType });
                 mediaRecorderRef.current = mediaRecorder;
+                accumulatedDataRef.current = new Uint8Array();
+                headerDataRef.current = null;
+                runningTranscriptionRef.current = '';
+                processingRef.current = false;
 
-                let chunks: Blob[] = [];
+                console.log('Recording started');
+
+                // Flag for first chunk (contains header)
+                let isFirstChunk = true;
+
                 mediaRecorder.ondataavailable = async (event) => {
                     if (event.data.size > 0) {
-                        const audioBlob = event.data;
-                        const reader = new FileReader();
-                        reader.onloadend = async () => {
-                            const base64Audio = (reader.result as string).split(',')[1];
-                            try {
-                                const partialTranscription = await window.electron.transcribeAudio(base64Audio);
-                                if (partialTranscription) {
-                                    updateTranscription(partialTranscription);
-                                }
-                            } catch (error) {
-                                console.error('Transcription error:', error);
-                            }
-                        };
-                        reader.readAsDataURL(audioBlob);
-                    }
-                };
+                        const arrayBuffer = await event.data.arrayBuffer();
+                        const newData = new Uint8Array(arrayBuffer);
 
-                mediaRecorder.onstop = async () => {
-                    // Create a single blob from all chunks
-                    const audioBlob = new Blob(chunks, { type: mimeType });
-
-                    // Convert to base64
-                    const reader = new FileReader();
-                    reader.onloadend = async () => {
-                        const base64Audio = (reader.result as string).split(',')[1];
-                        try {
-                            const transcription = await window.electron.transcribeAudio(base64Audio);
-                            if (transcription) {
-                                updateTranscription(transcription);
-                            }
-                        } catch (error) {
-                            console.error('Transcription error:', error);
+                        if (isFirstChunk) {
+                            // Store header data
+                            headerDataRef.current = new Uint8Array(arrayBuffer);
+                            isFirstChunk = false;
+                            console.log('Stored header data, size:', headerDataRef.current.length);
                         }
-                    };
-                    reader.readAsDataURL(audioBlob);
-                    chunks = [];
+
+                        console.log('New chunk size:', newData.length);
+                        accumulatedDataRef.current = concatenateUint8Arrays(
+                            accumulatedDataRef.current,
+                            newData
+                        );
+                        console.log('Total accumulated size:', accumulatedDataRef.current.length);
+                    }
                 };
 
-                mediaRecorder.start();
+                mediaRecorder.start(1000);
 
-                timeoutId = setTimeout(() => {
-                    if (mediaRecorder.state === 'recording') {
-                        mediaRecorder.stop();
+                processingInterval = setInterval(() => {
+                    if (accumulatedDataRef.current.length > 0 && !processingRef.current) {
+                        processAudioBuffer();
                     }
-                }, 4000);
+                }, 1000);
 
             } catch (error) {
                 console.error('Error starting recording:', error);
@@ -96,11 +142,16 @@ export default function Transcription({ isRecording, onTranscriptionUpdate, note
         };
 
         const stopRecording = () => {
+            console.log('Recording stopped');
             if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
                 mediaRecorderRef.current.stop();
                 mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
             }
-            setAudioChunks([]);
+            clearInterval(processingInterval);
+            accumulatedDataRef.current = new Uint8Array();
+            headerDataRef.current = null;
+            runningTranscriptionRef.current = '';
+            processingRef.current = false;
         };
 
         if (isRecording) {
@@ -110,10 +161,9 @@ export default function Transcription({ isRecording, onTranscriptionUpdate, note
         }
 
         return () => {
-            clearTimeout(timeoutId);
             stopRecording();
         };
-    }, [isRecording, onTranscriptionUpdate]);
+    }, [isRecording]);
 
-    return null; // This component doesn't render anything
+    return null;
 }
