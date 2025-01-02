@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
+interface TranscriptionBlock {
+    text: string;
+    index: number;
+    source: string;
+}
+
 interface TranscriptionProps {
     note_uuid: string;
 }
@@ -13,20 +19,37 @@ export default function Transcription({
     const runningTranscriptionRef = useRef<string>('');
     const processingRef = useRef<boolean>(false);
     const [currentTranscript, setCurrentTranscript] = useState('');
+    const [completedTranscripts, setCompletedTranscripts] = useState<TranscriptionBlock[]>([]);
     const [isRecording, setIsRecording] = useState(false);
 
     useEffect(() => {
         // Load initial transcription
         if (note_uuid) {
-            window.electron.getTranscription(note_uuid).then(setCurrentTranscript);
+            window.electron.getTranscription(note_uuid).then((transcript) => {
+                if (transcript) {
+                    // Split existing transcription into blocks if it exists
+                    const blocks = transcript.split('\n\n')
+                        .filter(block => block.trim())
+                        .map((text, index) => ({
+                            text,
+                            index,
+                            source: 'mic'
+                        }));
+                    if (blocks.length > 0) {
+                        setCompletedTranscripts(blocks);
+                    }
+                }
+            });
         }
     }, [note_uuid]);
 
     const updateTranscription = async (text: string) => {
         try {
-            await window.electron.addToTranscription(note_uuid, text);
-            const transcript = await window.electron.getTranscription(note_uuid);
-            setCurrentTranscript(transcript);
+            const updatedTranscripts = await window.electron.addToTranscription(note_uuid, text, 'mic');
+            // Get the latest transcript from the response
+            if (Array.isArray(updatedTranscripts) && updatedTranscripts.length > 0) {
+                setCompletedTranscripts(updatedTranscripts);
+            }
         } catch (error) {
             console.error('Error updating transcription:', error);
         }
@@ -76,11 +99,16 @@ export default function Transcription({
                     } else {
                         accumulatedDataRef.current = new Uint8Array();
                     }
+                    // Add completed transcription to blocks
+                    if (transcription.trim()) {
+                        await updateTranscription(transcription);
+                        setCurrentTranscript('');
+                    }
                     runningTranscriptionRef.current = '';
                 } else {
                     runningTranscriptionRef.current = transcription;
                     console.log('Updating transcription on UI');
-                    await updateTranscription(transcription);
+                    setCurrentTranscript(transcription);
                 }
             }
         } catch (error) {
@@ -111,10 +139,11 @@ export default function Transcription({
                 headerDataRef.current = null;
                 runningTranscriptionRef.current = '';
                 processingRef.current = false;
+                setCurrentTranscript('');
 
                 console.log('Recording started');
 
-                // Flag for first chunk (contains header)
+                // Flag for first chunk (contains webm header)
                 let isFirstChunk = true;
 
                 mediaRecorder.ondataavailable = async (event) => {
@@ -138,13 +167,13 @@ export default function Transcription({
                     }
                 };
 
-                mediaRecorder.start(1000);
+                mediaRecorder.start(600);
 
                 processingInterval = setInterval(() => {
                     if (accumulatedDataRef.current.length > 0 && !processingRef.current) {
                         processAudioBuffer();
                     }
-                }, 1000);
+                }, 600);
 
             } catch (error) {
                 console.error('Error starting recording:', error);
@@ -162,6 +191,11 @@ export default function Transcription({
             headerDataRef.current = null;
             runningTranscriptionRef.current = '';
             processingRef.current = false;
+            // Add the final transcript block if it exists
+            if (currentTranscript.trim()) {
+                updateTranscription(currentTranscript);
+                setCurrentTranscript('');
+            }
         };
 
         if (isRecording) {
@@ -177,6 +211,18 @@ export default function Transcription({
 
     return (
         <div className="space-y-4">
+            {/* Show completed transcripts only when recording */}
+            {isRecording && (
+                <>
+                    {/* Completed Transcripts */}
+                    {completedTranscripts.map((block) => (
+                        <div key={block.index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                            <div className="text-gray-800">{block.text}</div>
+                        </div>
+                    ))}
+                </>
+            )}
+
             {/* Active Transcription */}
             {isRecording && (
                 <div className="p-4 bg-gray-50 rounded-lg border border-blue-200 shadow-sm">

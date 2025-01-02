@@ -16,6 +16,11 @@ const store = new Store();
 let mainWindow: BrowserWindow | null = null;
 const PORT = 3000;
 
+interface TranscriptionBlock {
+    text: string;
+    index: number;
+    source: string;
+}
 
 // Note operations
 ipcMain.handle('get-all-notes', () => {
@@ -44,19 +49,37 @@ ipcMain.handle('update-note', (_, uuid: string, content: string) => {
 });
 
 // Transcription operations
-ipcMain.handle('add-to-transcription', async (_, note_uuid: string, text: string) => {
-    const transcriptions = store.get('transcriptions', {}) as Record<string, string>;
-    // Append the new text to existing transcription or create new one
-    transcriptions[note_uuid] = transcriptions[note_uuid]
-        ? transcriptions[note_uuid] + ' ' + text
-        : text;
+ipcMain.handle('add-to-transcription', async (_, note_uuid: string, text: string, source: string) => {
+    const transcriptions = store.get('transcriptions', {}) as Record<string, TranscriptionBlock[]>;
+
+    // Initialize array if it doesn't exist
+    if (!transcriptions[note_uuid]) {
+        transcriptions[note_uuid] = [];
+    }
+
+    // Get the next index
+    const nextIndex = transcriptions[note_uuid].length;
+
+    // Add new block
+    transcriptions[note_uuid].push({
+        text,
+        index: nextIndex,
+        source: source
+    });
+
     store.set('transcriptions', transcriptions);
     return transcriptions[note_uuid];
 });
 
 ipcMain.handle('get-transcription', async (_, note_uuid: string) => {
-    const transcriptions = store.get('transcriptions', {}) as Record<string, string>;
-    return transcriptions[note_uuid] || '';
+    const transcriptions = store.get('transcriptions', {}) as Record<string, TranscriptionBlock[]>;
+    const blocks = transcriptions[note_uuid] || [];
+
+    // Sort blocks by index to ensure order
+    blocks.sort((a, b) => a.index - b.index);
+
+    // For backward compatibility, join all texts with newlines
+    return blocks.map(block => block.text).join('\n\n');
 });
 
 // Handle audio transcription
@@ -136,21 +159,21 @@ ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
         console.error('Transcription error:', error);
         throw error;
     }
-    // finally {
-    //     // Clean up files in finally block to ensure they're always deleted
-    //     try {
-    //         if (webmFile && fs.existsSync(webmFile)) {
-    //             fs.unlinkSync(webmFile);
-    //             console.log('Cleaned up WebM file');
-    //         }
-    //         if (wavFile && fs.existsSync(wavFile)) {
-    //             fs.unlinkSync(wavFile);
-    //             console.log('Cleaned up WAV file');
-    //         }
-    //     } catch (cleanupError) {
-    //         console.error('Error during file cleanup:', cleanupError);
-    //     }
-    // }
+    finally {
+        // Clean up files in finally block to ensure they're always deleted
+        try {
+            if (webmFile && fs.existsSync(webmFile)) {
+                fs.unlinkSync(webmFile);
+                console.log('Cleaned up WebM file');
+            }
+            if (wavFile && fs.existsSync(wavFile)) {
+                fs.unlinkSync(wavFile);
+                console.log('Cleaned up WAV file');
+            }
+        } catch (cleanupError) {
+            console.error('Error during file cleanup:', cleanupError);
+        }
+    }
 });
 
 

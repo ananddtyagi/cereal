@@ -4,7 +4,7 @@ export interface ElectronAPI {
     createNote: (content?: string) => Promise<string>;
     updateNote: (uuid: string, content: string) => Promise<boolean>;
     transcribeAudio: (base64Audio: string) => Promise<string | null>;
-    addToTranscription: (note_uuid: string, text: string) => Promise<string>;
+    addToTranscription: (note_uuid: string, text: string, source: string) => Promise<string>;
     getTranscription: (note_uuid: string) => Promise<string>;
 }
 
