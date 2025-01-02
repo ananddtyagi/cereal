@@ -21,6 +21,8 @@ export default function Transcription({
     const [currentTranscript, setCurrentTranscript] = useState('');
     const [completedTranscripts, setCompletedTranscripts] = useState<TranscriptionBlock[]>([]);
     const [isRecording, setIsRecording] = useState(false);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [userHasScrolled, setUserHasScrolled] = useState(false);
 
     useEffect(() => {
         // Load initial transcription
@@ -167,13 +169,13 @@ export default function Transcription({
                     }
                 };
 
-                mediaRecorder.start(600);
+                mediaRecorder.start(1000);
 
                 processingInterval = setInterval(() => {
                     if (accumulatedDataRef.current.length > 0 && !processingRef.current) {
                         processAudioBuffer();
                     }
-                }, 600);
+                }, 1000);
 
             } catch (error) {
                 console.error('Error starting recording:', error);
@@ -209,36 +211,77 @@ export default function Transcription({
         };
     }, [isRecording]);
 
-    return (
-        <div className="space-y-4">
-            {/* Show completed transcripts only when recording */}
-            {isRecording && (
-                <>
-                    {/* Completed Transcripts */}
-                    {completedTranscripts.map((block) => (
-                        <div key={block.index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                            <div className="text-gray-800">{block.text}</div>
-                        </div>
-                    ))}
-                </>
-            )}
+    // Auto-scroll function
+    const scrollToBottom = () => {
+        if (scrollContainerRef.current && !userHasScrolled) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
+    };
 
-            {/* Active Transcription */}
+    // Handle user scroll
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const container = e.currentTarget;
+        const isAtBottom = Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 10;
+
+        if (!isAtBottom) {
+            setUserHasScrolled(true);
+        } else {
+            setUserHasScrolled(false);
+        }
+    };
+
+    // Reset user scroll when recording starts
+    useEffect(() => {
+        if (isRecording) {
+            setUserHasScrolled(false);
+            scrollToBottom();
+        }
+    }, [isRecording]);
+
+    // Auto-scroll when new transcripts arrive
+    useEffect(() => {
+        scrollToBottom();
+    }, [completedTranscripts, currentTranscript]);
+
+    return (
+        <div className="relative h-full">
+            {/* Fixed card at the bottom for transcripts */}
             {isRecording && (
-                <div className="p-4 bg-gray-50 rounded-lg border border-blue-200 shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                        <div className="text-sm text-gray-500">Recording...</div>
-                        <div className="flex items-center">
-                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></div>
-                            <span className="text-sm text-gray-500">Live Transcript</span>
+                <div className="fixed bottom-24 right-8 w-1/2 bg-white rounded-lg border border-gray-200 shadow-lg max-h-[300px] overflow-hidden">
+                    <div className="p-4 border-b border-gray-200">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-medium">Transcription</h3>
+                            <div className="flex items-center">
+                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></div>
+                                <span className="text-sm text-gray-500">Recording</span>
+                            </div>
                         </div>
                     </div>
-                    <div className="text-gray-800">
-                        {currentTranscript || 'Listening...'}
+
+                    {/* Scrollable content area */}
+                    <div
+                        ref={scrollContainerRef}
+                        onScroll={handleScroll}
+                        className="p-4 overflow-y-auto max-h-[220px] space-y-2 scroll-smooth"
+                    >
+                        {/* Completed Transcripts */}
+                        {completedTranscripts.map((block) => (
+                            <div key={block.index} className="p-2 bg-gray-50 rounded border border-gray-100">
+                                <div className="text-gray-800 text-sm">{block.text}</div>
+                            </div>
+                        ))}
+
+                        {/* Active Transcription */}
+                        {currentTranscript && (
+                            <div className="p-2 bg-blue-50 rounded border border-blue-100">
+                                <div className="text-gray-800 text-sm">{currentTranscript}</div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
 
+            {/* Recording button */}
             <button
                 onClick={() => setIsRecording(!isRecording)}
                 title="Toggle recording"
