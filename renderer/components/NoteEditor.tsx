@@ -64,7 +64,17 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
         await window.electron.updateNote(noteUuid, noteData);
     };
 
-
+    const handleDelete = async () => {
+        const confirmed = window.confirm('Are you sure you want to delete this note? This action cannot be undone.');
+        if (confirmed) {
+            try {
+                await window.electron.deleteNote(noteUuid);
+                router.push('/notes');
+            } catch (error) {
+                console.error('Error deleting note:', error);
+            }
+        }
+    };
 
     if (loading) {
         return (
@@ -82,13 +92,24 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     return (
         <div className="min-h-screen bg-blue">
             <div className="max-w-4xl mx-auto p-8 space-y-6">
-                <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => handleTitleChange(e.target.value)}
-                    className="w-full text-4xl font-bold mb-4 bg-transparent border-none focus:outline-none focus:ring-0 placeholder-gray-400"
-                    placeholder="Untitled"
-                />
+                <div className="flex justify-between items-center">
+                    <input
+                        type="text"
+                        value={title}
+                        onChange={(e) => handleTitleChange(e.target.value)}
+                        className="w-full text-4xl font-bold mb-4 bg-transparent border-none focus:outline-none focus:ring-0 placeholder-gray-400"
+                        placeholder="Untitled"
+                    />
+                    <button
+                        onClick={handleDelete}
+                        className="text-gray-500 hover:text-red-500 transition-colors p-2"
+                        title="Delete note"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
                 <textarea
                     value={content}
                     onChange={(e) => handleContentChange(e.target.value)}

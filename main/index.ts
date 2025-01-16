@@ -40,6 +40,14 @@ ipcMain.handle('create-note', (_, content: string) => {
     return uuid;
 });
 
+ipcMain.handle('delete-note', (_, uuid: string) => {
+    const notes = store.get('notes', {}) as Record<string, string>;
+    if (!(uuid in notes)) return false;
+    delete notes[uuid];
+    store.set('notes', notes);
+    return true;
+});
+
 ipcMain.handle('update-note', (_, uuid: string, content: string) => {
     const notes = store.get('notes', {}) as Record<string, string>;
     if (!(uuid in notes)) return false;
@@ -50,9 +58,10 @@ ipcMain.handle('update-note', (_, uuid: string, content: string) => {
 
 // Transcription operations
 ipcMain.handle('add-to-transcription', async (_, note_uuid: string, text: string, source: string) => {
+    // Get existing transcriptions or initialize empty object if it doesn't exist
     const transcriptions = store.get('transcriptions', {}) as Record<string, TranscriptionBlock[]>;
 
-    // Initialize array if it doesn't exist
+    // Initialize array for this note if it doesn't exist
     if (!transcriptions[note_uuid]) {
         transcriptions[note_uuid] = [];
     }
@@ -67,6 +76,7 @@ ipcMain.handle('add-to-transcription', async (_, note_uuid: string, text: string
         source: source
     });
 
+    // Save back to store
     store.set('transcriptions', transcriptions);
     return transcriptions[note_uuid];
 });
@@ -76,10 +86,10 @@ ipcMain.handle('get-transcription', async (_, note_uuid: string) => {
     const blocks = transcriptions[note_uuid] || [];
 
     // Sort blocks by index to ensure order
-    blocks.sort((a, b) => a.index - b.index);
+    const sortedBlocks = [...blocks].sort((a, b) => a.index - b.index);
 
     // For backward compatibility, join all texts with newlines
-    return blocks.map(block => block.text).join('\n\n');
+    return sortedBlocks.map(block => block.text).join('\n\n');
 });
 
 // Handle audio transcription

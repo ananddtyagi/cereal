@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('electron', {
     createNote: async (content: string = ''): Promise<string> => {
         return await ipcRenderer.invoke('create-note', content);
     },
+    deleteNote: async (uuid: string): Promise<boolean> => {
+        return await ipcRenderer.invoke('delete-note', uuid);
+    },
     updateNote: async (uuid: string, content: string): Promise<boolean> => {
         return await ipcRenderer.invoke('update-note', uuid, content);
     },

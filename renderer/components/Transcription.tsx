@@ -28,6 +28,7 @@ export default function Transcription({
         // Load initial transcription
         if (note_uuid) {
             window.electron.getTranscription(note_uuid).then((transcript) => {
+                console.log("Transcript:", transcript);
                 if (transcript) {
                     // Split existing transcription into blocks if it exists
                     const blocks = transcript.split('\n\n')
@@ -43,7 +44,7 @@ export default function Transcription({
                 }
             });
         }
-    }, [note_uuid]);
+    }, []);
 
     const updateTranscription = async (text: string) => {
         try {
@@ -97,6 +98,7 @@ export default function Transcription({
                     console.log('Segment complete - resetting buffer');
                     if (headerDataRef.current) {
                         // Reset to header data only
+                        console.log("Header data:", headerDataRef.current);
                         accumulatedDataRef.current = new Uint8Array(headerDataRef.current);
                     } else {
                         accumulatedDataRef.current = new Uint8Array();
