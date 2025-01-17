@@ -8,11 +8,6 @@ interface NoteEditorProps {
     noteUuid: string;
 }
 
-interface Note {
-    title: string;
-    content: string;
-}
-
 export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     const [content, setContent] = useState('');
     const [title, setTitle] = useState('');
