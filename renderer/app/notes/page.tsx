@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { createNewNote } from '@/lib/utils';
 
 export default function NotesPage() {
     const [notes, setNotes] = useState<Record<string, string>>({});
@@ -25,10 +26,9 @@ export default function NotesPage() {
         }
     };
 
-    const createNewNote = async () => {
+    const handleCreateNewNote = async () => {
         try {
-            const newNoteId = await window.electron.createNote('');
-            await loadNotes();
+            const newNoteId = await createNewNote();
             router.push(`/notes/${newNoteId}`);
         } catch (error) {
             console.error('Error creating note:', error);
@@ -41,7 +41,7 @@ export default function NotesPage() {
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold text-primary-800">My Notes</h1>
                     <button
-                        onClick={createNewNote}
+                        onClick={handleCreateNewNote}
                         className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                     >
                         New Note
