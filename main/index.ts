@@ -163,7 +163,6 @@ ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
 
         // Parse the JSON response
         const result = await response.json();
-        console.log('Transcription result:', result);
 
         // Return the transcribed text
         return result.text || '';
@@ -174,14 +173,14 @@ ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
     finally {
         // Clean up files in finally block to ensure they're always deleted
         try {
-            if (webmFile && fs.existsSync(webmFile)) {
-                fs.unlinkSync(webmFile);
-                console.log('Cleaned up WebM file');
-            }
-            if (wavFile && fs.existsSync(wavFile)) {
-                fs.unlinkSync(wavFile);
-                console.log('Cleaned up WAV file');
-            }
+            // if (webmFile && fs.existsSync(webmFile)) {
+            //     fs.unlinkSync(webmFile);
+            //     console.log('Cleaned up WebM file');
+            // }
+            // if (wavFile && fs.existsSync(wavFile)) {
+            //     fs.unlinkSync(wavFile);
+            //     console.log('Cleaned up WAV file');
+            // }
         } catch (cleanupError) {
             console.error('Error during file cleanup:', cleanupError);
         }

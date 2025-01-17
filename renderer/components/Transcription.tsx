@@ -83,7 +83,7 @@ export default function Transcription({
             const transcription = await window.electron.transcribeAudio(base64Audio);
 
             if (transcription) {
-                if (transcription === runningTranscriptionRef.current) { // [BLANK AUDIO] is the default transcription when the user stops recording. Change this to dynamic default (likely depending on model)
+                if (transcription === runningTranscriptionRef.current) {
                     if (headerDataRef.current) {
                         // Reset to header data only
                         accumulatedDataRef.current = new Uint8Array(headerDataRef.current);
@@ -96,7 +96,7 @@ export default function Transcription({
                         setCurrentTranscript('');
                     }
                     runningTranscriptionRef.current = '';
-                } else if (transcription.trim() === '[BLANK_AUDIO]') {
+                } else if (transcription.trim() === '[BLANK_AUDIO]') { // [BLANK AUDIO] is the default transcription when the user stops recording. Change this to dynamic default (likely depending on model)// [BLANK AUDIO] is the default transcription when the user stops recording. Change this to dynamic default (likely depending on model
                     runningTranscriptionRef.current = '';
                     setCurrentTranscript('');
                 } else {
@@ -144,27 +144,27 @@ export default function Transcription({
 
                         if (isFirstChunk) {
                             // Store header data
-                            headerDataRef.current = new Uint8Array(arrayBuffer);
+                            headerDataRef.current = new Uint8Array(newData);
                             isFirstChunk = false;
+                            accumulatedDataRef.current = new Uint8Array(newData);
+                        } else {
+                            accumulatedDataRef.current = concatenateUint8Arrays(
+                                accumulatedDataRef.current,
+                                newData
+                            );
                         }
 
-                        accumulatedDataRef.current = concatenateUint8Arrays(
-                            accumulatedDataRef.current,
-                            newData
-                        );
+
                     }
                 };
 
-                mediaRecorder.start(1000);
+                mediaRecorder.start(500);
 
                 processingInterval = setInterval(() => {
-                    if (isFirstChunk) { // does this to collect the audio buffer chunk and not store any initial speech.
+                    if (accumulatedDataRef.current.length > 0 && !processingRef.current) {
                         processAudioBuffer();
                     }
-                    else if (accumulatedDataRef.current.length > 0 && !processingRef.current) {
-                        processAudioBuffer();
-                    }
-                }, 1000);
+                }, 500);
 
             } catch (error) {
                 console.error('Error starting recording:', error);
