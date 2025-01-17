@@ -31,7 +31,7 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
 
         setLoading(true);
         try {
-            const note = await window.electron.getNote(noteUuid);
+            const note: { title: string, content: string } | null = await window.electron.getNote(noteUuid);
             if (note !== null) {
                 setTitle(note.title || '');
                 setContent(note.content || '');

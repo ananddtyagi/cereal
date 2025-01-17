@@ -1,6 +1,6 @@
 export interface ElectronAPI {
     getAllNotes: () => Promise<Record<string, { title: string, content: string }>>;
-    getNote: (uuid: string) => Promise<string | null>;
+    getNote: (uuid: string) => Promise<{ title: string, content: string } | null>;
     createNote: () => Promise<string>;
     updateNoteContent: (uuid: string, content: string) => Promise<boolean>;
     updateNoteTitle: (uuid: string, content: string) => Promise<boolean>;

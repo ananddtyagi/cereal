@@ -34,7 +34,7 @@ ipcMain.handle('get-note', (_, uuid: string) => {
 ipcMain.handle('create-note', () => {
     const uuid = uuidv4();
     const notes = store.get('notes', {}) as Record<string, { title: string, content: string }>;
-    notes[uuid] = { title: 'Untitled', content: '' };
+    notes[uuid] = { title: '', content: '' };
     store.set('notes', notes);
     return uuid;
 });
