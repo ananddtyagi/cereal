@@ -8,6 +8,11 @@ interface NoteEditorProps {
     noteUuid: string;
 }
 
+interface Note {
+    title: string;
+    content: string;
+}
+
 export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     const [content, setContent] = useState('');
     const [title, setTitle] = useState('');
@@ -26,7 +31,7 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
 
         setLoading(true);
         try {
-            const note: { title: string, content: string } | null = await window.electron.getNote(noteUuid);
+            const note: Note | null = await window.electron.getNote(noteUuid);
             if (note !== null) {
                 setTitle(note.title || '');
                 setContent(note.content || '');
