@@ -23,18 +23,18 @@ interface TranscriptionBlock { // Figure out how to create shared types between 
 
 // Note operations
 ipcMain.handle('get-all-notes', () => {
-    return store.get('notes', {});
+    return store.get('notes', {}) as Record<string, { title: string, content: string }>;
 });
 
 ipcMain.handle('get-note', (_, uuid: string) => {
-    const notes = store.get('notes', {}) as Record<string, string>;
+    const notes = store.get('notes', {}) as Record<string, { title: string, content: string }>;
     return notes[uuid] || null;
 });
 
-ipcMain.handle('create-note', (_, content: string) => {
+ipcMain.handle('create-note', () => {
     const uuid = uuidv4();
-    const notes = store.get('notes', {}) as Record<string, string>;
-    notes[uuid] = content;
+    const notes = store.get('notes', {}) as Record<string, { title: string, content: string }>;
+    notes[uuid] = { title: 'Untitled', content: '' };
     store.set('notes', notes);
     return uuid;
 });
@@ -47,10 +47,18 @@ ipcMain.handle('delete-note', (_, uuid: string) => {
     return true;
 });
 
-ipcMain.handle('update-note', (_, uuid: string, content: string) => {
-    const notes = store.get('notes', {}) as Record<string, string>;
+ipcMain.handle('update-note-content', (_, uuid: string, content: string) => {
+    const notes = store.get('notes', {}) as Record<string, { title: string, content: string }>;
     if (!(uuid in notes)) return false;
-    notes[uuid] = content;
+    notes[uuid].content = content;
+    store.set('notes', notes);
+    return true;
+});
+
+ipcMain.handle('update-note-title', (_, uuid: string, content: string) => {
+    const notes = store.get('notes', {}) as Record<string, { title: string, content: string }>;
+    if (!(uuid in notes)) return false;
+    notes[uuid].title = content;
     store.set('notes', notes);
     return true;
 });

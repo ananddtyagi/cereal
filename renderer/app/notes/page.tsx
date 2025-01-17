@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createNewNote } from '@/lib/utils';
 
 export default function NotesPage() {
-    const [notes, setNotes] = useState<Record<string, string>>({});
+    const [notes, setNotes] = useState<Record<string, { title: string, content: string }>>({});
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
@@ -35,6 +35,7 @@ export default function NotesPage() {
         }
     };
 
+    console.log(notes)
     return (
         <div className="p-8">
             <div className="max-w-4xl mx-auto">
@@ -66,8 +67,14 @@ export default function NotesPage() {
                                 href={`/notes/${uuid}`}
                                 className="p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
                             >
-                                <div className="text-lg text-primary-700">
-                                    {content.slice(0, 100) || 'Empty note...'}
+                                <div className="flex flex-col gap-2">
+                                    <h2 className="text-xl font-semibold text-primary-800">
+                                        {content.title || 'Untitled'}
+                                        {/* {content.title || 'Untitled'} */}
+                                    </h2>
+                                    <p className="text-gray-600 line-clamp-2">
+                                        {content.content || 'Empty note...'}
+                                    </p>
                                 </div>
                             </Link>
                         ))

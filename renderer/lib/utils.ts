@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export async function createNewNote() {
     try {
-        const newNoteId = await window.electron.createNote('');
+        const newNoteId = await window.electron.createNote();
         return newNoteId;
     } catch (error) {
         console.error('Error creating note:', error);

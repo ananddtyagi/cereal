@@ -2,10 +2,10 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electron', {
     // Note operations
-    getAllNotes: async (): Promise<Record<string, string>> => {
+    getAllNotes: async (): Promise<Record<string, { title: string, content: string }>> => {
         return await ipcRenderer.invoke('get-all-notes');
     },
-    getNote: async (uuid: string): Promise<string | null> => {
+    getNote: async (uuid: string): Promise<{ title: string, content: string } | null> => {
         return await ipcRenderer.invoke('get-note', uuid);
     },
     createNote: async (content: string = ''): Promise<string> => {
@@ -14,8 +14,11 @@ contextBridge.exposeInMainWorld('electron', {
     deleteNote: async (uuid: string): Promise<boolean> => {
         return await ipcRenderer.invoke('delete-note', uuid);
     },
-    updateNote: async (uuid: string, content: string): Promise<boolean> => {
-        return await ipcRenderer.invoke('update-note', uuid, content);
+    updateNoteContent: async (uuid: string, content: string): Promise<boolean> => {
+        return await ipcRenderer.invoke('update-note-content', uuid, content);
+    },
+    updateNoteTitle: async (uuid: string, content: string): Promise<boolean> => {
+        return await ipcRenderer.invoke('update-note-title', uuid, content);
     },
     addToTranscription: async (note_uuid: string, text: string): Promise<string> => {
         return await ipcRenderer.invoke('add-to-transcription', note_uuid, text);

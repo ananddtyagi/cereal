@@ -31,16 +31,10 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
 
         setLoading(true);
         try {
-            const noteContent = await window.electron.getNote(noteUuid);
-            if (noteContent !== null) {
-                try {
-                    const parsedNote = JSON.parse(noteContent) as Note;
-                    setTitle(parsedNote.title || '');
-                    setContent(parsedNote.content || '');
-                } catch {
-                    // If it's an old note format, just set it as content
-                    setContent(noteContent);
-                }
+            const note = await window.electron.getNote(noteUuid);
+            if (note !== null) {
+                setTitle(note.title || '');
+                setContent(note.content || '');
             }
         } catch (error) {
             console.error('Error loading note:', error);
@@ -53,15 +47,13 @@ export default function NoteEditor({ noteUuid }: NoteEditorProps) {
     const handleContentChange = async (newContent: string) => {
         setContent(newContent);
         if (!noteUuid) return;
-        const noteData = JSON.stringify({ title, content: newContent });
-        await window.electron.updateNote(noteUuid, noteData);
+        await window.electron.updateNoteContent(noteUuid, newContent);
     };
 
     const handleTitleChange = async (newTitle: string) => {
         setTitle(newTitle);
         if (!noteUuid) return;
-        const noteData = JSON.stringify({ title: newTitle, content });
-        await window.electron.updateNote(noteUuid, noteData);
+        await window.electron.updateNoteTitle(noteUuid, newTitle);
     };
 
     const handleDelete = async () => {
