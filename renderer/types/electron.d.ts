@@ -6,7 +6,7 @@ export interface ElectronAPI {
     deleteNote: (uuid: string) => Promise<boolean>;
     transcribeAudio: (base64Audio: string) => Promise<string | null>;
     addToTranscription: (note_uuid: string, text: string, source: string) => Promise<string>;
-    getTranscription: (note_uuid: string) => Promise<string>;
+    getTranscription: (note_uuid: string) => Promise<TranscriptionBlock[]>;
 }
 
 declare global {

@@ -11,12 +11,11 @@ import ffmpeg from 'fluent-ffmpeg';
 import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
-
 const store = new Store();
 let mainWindow: BrowserWindow | null = null;
 const PORT = 3000;
 
-interface TranscriptionBlock {
+interface TranscriptionBlock { // Figure out how to create shared types between this and the renderer
     text: string;
     index: number;
     source: string;
@@ -84,12 +83,7 @@ ipcMain.handle('add-to-transcription', async (_, note_uuid: string, text: string
 ipcMain.handle('get-transcription', async (_, note_uuid: string) => {
     const transcriptions = store.get('transcriptions', {}) as Record<string, TranscriptionBlock[]>;
     const blocks = transcriptions[note_uuid] || [];
-
-    // Sort blocks by index to ensure order
-    const sortedBlocks = [...blocks].sort((a, b) => a.index - b.index);
-
-    // For backward compatibility, join all texts with newlines
-    return sortedBlocks.map(block => block.text).join('\n\n');
+    return blocks;
 });
 
 // Handle audio transcription

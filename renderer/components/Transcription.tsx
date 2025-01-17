@@ -1,10 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { TranscriptionBlock } from '../types/transcription';
 
-interface TranscriptionBlock {
-    text: string;
-    index: number;
-    source: string;
-}
 
 interface TranscriptionProps {
     note_uuid: string;
@@ -27,24 +23,21 @@ export default function Transcription({
     useEffect(() => {
         // Load initial transcription
         if (note_uuid) {
-            window.electron.getTranscription(note_uuid).then((transcript) => {
-                console.log("Transcript:", transcript);
+            window.electron.getTranscription(note_uuid).then((transcript: TranscriptionBlock[]) => {
                 if (transcript) {
                     // Split existing transcription into blocks if it exists
-                    const blocks = transcript.split('\n\n')
-                        .filter(block => block.trim())
-                        .map((text, index) => ({
-                            text,
-                            index,
-                            source: 'mic'
-                        }));
+                    const blocks = transcript.map(({ text, index }: TranscriptionBlock) => ({
+                        text,
+                        index,
+                        source: 'mic'
+                    }));
                     if (blocks.length > 0) {
                         setCompletedTranscripts(blocks);
                     }
                 }
             });
         }
-    }, []);
+    }, [note_uuid]);
 
     const updateTranscription = async (text: string) => {
         try {
@@ -245,6 +238,7 @@ export default function Transcription({
         scrollToBottom();
     }, [completedTranscripts, currentTranscript]);
 
+    console.log("completedTranscripts", completedTranscripts);
     return (
         <div className="relative h-full">
             {/* Fixed card at the bottom for transcripts */}

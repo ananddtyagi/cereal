@@ -20,7 +20,7 @@ contextBridge.exposeInMainWorld('electron', {
     addToTranscription: async (note_uuid: string, text: string): Promise<string> => {
         return await ipcRenderer.invoke('add-to-transcription', note_uuid, text);
     },
-    getTranscription: async (note_uuid: string): Promise<string> => {
+    getTranscription: async (note_uuid: string): Promise<{ text: string, index: number }[]> => {
         return await ipcRenderer.invoke('get-transcription', note_uuid);
     },
     transcribeAudio: async (base64Audio: string) => {
