@@ -25,7 +25,6 @@ export default function Transcription({
         if (note_uuid) {
             window.electron.getTranscription(note_uuid).then((transcript: TranscriptionBlock[]) => {
                 if (transcript) {
-                    // Split existing transcription into blocks if it exists
                     const blocks = transcript.map(({ text, index }: TranscriptionBlock) => ({
                         text,
                         index,
@@ -66,7 +65,6 @@ export default function Transcription({
             const audioBlob = new Blob([accumulatedDataRef.current], {
                 type: mediaRecorderRef.current?.mimeType || 'audio/webm'
             });
-            console.log("Audio blob size:", audioBlob.size);
 
             const base64Audio = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader();
@@ -82,16 +80,12 @@ export default function Transcription({
                 reader.readAsDataURL(audioBlob);
             });
 
-            console.log("Transcribing audio");
             const transcription = await window.electron.transcribeAudio(base64Audio);
-            console.log('Transcription received:', transcription);
 
             if (transcription) {
-                if (transcription === runningTranscriptionRef.current) {
-                    console.log('Segment complete - resetting buffer');
+                if (transcription === runningTranscriptionRef.current) { // [BLANK AUDIO] is the default transcription when the user stops recording. Change this to dynamic default (likely depending on model)
                     if (headerDataRef.current) {
                         // Reset to header data only
-                        console.log("Header data:", headerDataRef.current);
                         accumulatedDataRef.current = new Uint8Array(headerDataRef.current);
                     } else {
                         accumulatedDataRef.current = new Uint8Array();
@@ -102,9 +96,11 @@ export default function Transcription({
                         setCurrentTranscript('');
                     }
                     runningTranscriptionRef.current = '';
+                } else if (transcription.trim() === '[BLANK_AUDIO]') {
+                    runningTranscriptionRef.current = '';
+                    setCurrentTranscript('');
                 } else {
                     runningTranscriptionRef.current = transcription;
-                    console.log('Updating transcription on UI');
                     setCurrentTranscript(transcription);
                 }
             }
@@ -138,8 +134,6 @@ export default function Transcription({
                 processingRef.current = false;
                 setCurrentTranscript('');
 
-                console.log('Recording started');
-
                 // Flag for first chunk (contains webm header)
                 let isFirstChunk = true;
 
@@ -152,22 +146,22 @@ export default function Transcription({
                             // Store header data
                             headerDataRef.current = new Uint8Array(arrayBuffer);
                             isFirstChunk = false;
-                            console.log('Stored header data, size:', headerDataRef.current.length);
                         }
 
-                        console.log('New chunk size:', newData.length);
                         accumulatedDataRef.current = concatenateUint8Arrays(
                             accumulatedDataRef.current,
                             newData
                         );
-                        console.log('Total accumulated size:', accumulatedDataRef.current.length);
                     }
                 };
 
                 mediaRecorder.start(1000);
 
                 processingInterval = setInterval(() => {
-                    if (accumulatedDataRef.current.length > 0 && !processingRef.current) {
+                    if (isFirstChunk) { // does this to collect the audio buffer chunk and not store any initial speech.
+                        processAudioBuffer();
+                    }
+                    else if (accumulatedDataRef.current.length > 0 && !processingRef.current) {
                         processAudioBuffer();
                     }
                 }, 1000);
@@ -178,7 +172,6 @@ export default function Transcription({
         };
 
         const stopRecording = () => {
-            console.log('Recording stopped');
             if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
                 mediaRecorderRef.current.stop();
                 mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
@@ -238,7 +231,6 @@ export default function Transcription({
         scrollToBottom();
     }, [completedTranscripts, currentTranscript]);
 
-    console.log("completedTranscripts", completedTranscripts);
     return (
         <div className="relative h-full">
             {/* Fixed card at the bottom for transcripts */}
