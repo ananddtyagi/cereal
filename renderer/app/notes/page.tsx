@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { createNewNote } from '@/lib/utils';
 
 export default function NotesPage() {
-    const [notes, setNotes] = useState<Record<string, string>>({});
+    const [notes, setNotes] = useState<Record<string, { title: string, content: string }>>({});
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
@@ -25,23 +26,23 @@ export default function NotesPage() {
         }
     };
 
-    const createNewNote = async () => {
+    const handleCreateNewNote = async () => {
         try {
-            const newNoteId = await window.electron.createNote('');
-            await loadNotes();
+            const newNoteId = await createNewNote();
             router.push(`/notes/${newNoteId}`);
         } catch (error) {
             console.error('Error creating note:', error);
         }
     };
 
+    console.log(notes)
     return (
         <div className="p-8">
             <div className="max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold text-primary-800">My Notes</h1>
                     <button
-                        onClick={createNewNote}
+                        onClick={handleCreateNewNote}
                         className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                     >
                         New Note
@@ -66,8 +67,14 @@ export default function NotesPage() {
                                 href={`/notes/${uuid}`}
                                 className="p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
                             >
-                                <div className="text-lg text-primary-700">
-                                    {content.slice(0, 100) || 'Empty note...'}
+                                <div className="flex flex-col gap-2">
+                                    <h2 className="text-xl font-semibold text-primary-800">
+                                        {content.title || 'Untitled'}
+                                        {/* {content.title || 'Untitled'} */}
+                                    </h2>
+                                    <p className="text-gray-600 line-clamp-2">
+                                        {content.content || 'Empty note...'}
+                                    </p>
                                 </div>
                             </Link>
                         ))
