@@ -2,17 +2,23 @@ import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import isDev from 'electron-is-dev';
 import { app } from 'electron';
+import { EventEmitter } from 'events';
 
+const transcriptionEmitter = new EventEmitter();
 let serverProcess: ChildProcess | null = null;
+let isServerRunning = false;
 
 export async function startWhisperServer(): Promise<void> {
+    if (isServerRunning) {
+        return;
+    }
+
     return new Promise((resolve, reject) => {
         const baseDir = isDev
             ? process.cwd()
             : process.resourcesPath;
 
-        const serverPath = path.join(baseDir, 'transcription-server', 'whisper-server');
-        console.log(`Starting whisper-server from: ${serverPath}`);
+        const serverPath = path.join(baseDir, 'transcription-server', 'whisper-stream');
 
         // Kill any existing server process
         if (serverProcess) {
@@ -20,57 +26,87 @@ export async function startWhisperServer(): Promise<void> {
             serverProcess = null;
         }
 
+        // Run whisper-stream with basic configuration
         serverProcess = spawn(
             serverPath,
-            ['--port', '9000'],
+            [
+                '-m', path.join(baseDir, 'transcription-server', 'models', 'ggml-base.en.bin'),
+                '-t', '8',
+                '--step', '500',
+                '--length', '10000',
+            ],
             {
-                cwd: path.join(baseDir, 'transcription-server')
+                cwd: path.join(baseDir, 'transcription-server'),
+                stdio: ['pipe', 'pipe', 'pipe'] // Enable stdin for streaming
             }
         );
 
         let startupError = '';
 
         serverProcess.stdout?.on('data', (data) => {
-            console.log(`whisper-server stdout: ${data.toString()}`);
+            const rawText = data.toString().trim();
+            // Emit the processed transcription
+            transcriptionEmitter.emit('transcription-update', {
+                text: rawText
+            });
         });
 
         serverProcess.stderr?.on('data', (data) => {
             const error = data.toString();
-            console.error(`whisper-server stderr: ${error}`);
-            startupError += error;
+            if (!error.includes('input is too short')) {
+                startupError += error;
+            }
         });
 
-        // Give the server a few seconds to start
         setTimeout(() => {
             if (serverProcess?.exitCode === null) {
-                console.log('Whisper server started successfully');
+                isServerRunning = true;
                 resolve();
             } else {
-                reject(new Error(`Failed to start whisper server: ${startupError}`));
+                isServerRunning = false;
+                reject(new Error(`Failed to start whisper stream: ${startupError}`));
             }
         }, 5000);
 
         serverProcess.on('error', (error) => {
-            console.error('Server process error:', error);
+            isServerRunning = false;
             reject(error);
         });
 
         serverProcess.on('close', (code) => {
+            isServerRunning = false;
             if (code !== 0) {
-                console.error(`whisper-server process exited with code ${code}`);
-                console.error('Startup error:', startupError);
-                reject(new Error(`Server process exited with code ${code}`));
+                reject(new Error(`Stream process exited with code ${code}`));
             }
         });
     });
 }
 
-// Cleanup on app quit
-app.on('before-quit', () => {
+export function stopWhisperServer(): void {
     if (serverProcess) {
-        console.log('Shutting down whisper server...');
         serverProcess.kill();
         serverProcess = null;
+        isServerRunning = false;
     }
-});
+}
 
+// We still keep this function since the C++ server expects audio input
+export function writeToWhisperStream(audioData: Buffer): void {
+    if (!isServerRunning) {
+        startWhisperServer().catch(() => {
+            isServerRunning = false;
+        });
+        return;
+    }
+
+    if (serverProcess && serverProcess.stdin) {
+        serverProcess.stdin.write(audioData);
+    }
+}
+
+export const getTranscriptionEmitter = () => transcriptionEmitter;
+
+// Cleanup on app quit
+app.on('before-quit', () => {
+    stopWhisperServer();
+});

@@ -1,27 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { act, useEffect, useRef, useState } from 'react';
 import { TranscriptionBlock } from '../types/transcription';
-
+import { TranscriptionUpdate } from '../types/electron';
 
 interface TranscriptionProps {
     note_uuid: string;
 }
 
-export default function Transcription({
-    note_uuid,
-}: TranscriptionProps) {
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const accumulatedDataRef = useRef<Uint8Array>(new Uint8Array());
-    const headerDataRef = useRef<Uint8Array | null>(null);
-    const runningTranscriptionRef = useRef<string>('');
-    const processingRef = useRef<boolean>(false);
-    const [currentTranscript, setCurrentTranscript] = useState('');
-    const [completedTranscripts, setCompletedTranscripts] = useState<TranscriptionBlock[]>([]);
+export default function Transcription({ note_uuid }: TranscriptionProps) {
+    const currentTranscriptRef = useRef('');
+    const [activeTranscript, setActiveTranscript] = useState('');
+    const activeTranscriptRef = useRef('');
     const [isRecording, setIsRecording] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [userHasScrolled, setUserHasScrolled] = useState(false);
+    const [completedTranscripts, setCompletedTranscripts] = useState<TranscriptionBlock[]>([]);
+
 
     useEffect(() => {
-        // Load initial transcription
         if (note_uuid) {
             window.electron.getTranscription(note_uuid).then((transcript: TranscriptionBlock[]) => {
                 if (transcript) {
@@ -41,172 +36,87 @@ export default function Transcription({
     const updateTranscription = async (text: string) => {
         try {
             const updatedTranscripts = await window.electron.addToTranscription(note_uuid, text, 'mic');
-            // Get the latest transcript from the response
             if (Array.isArray(updatedTranscripts) && updatedTranscripts.length > 0) {
                 setCompletedTranscripts(updatedTranscripts);
             }
         } catch (error) {
             console.error('Error updating transcription:', error);
         }
+    }
+
+    const cleanTranscription = (text: string) => {
+        let cleanText = text
+            .replace(/\u001b\[[0-9;]*[a-zA-Z]/g, '')    // Remove ANSI escape sequences
+            .replace(/\u001b\[2K/g, '')                  // Remove [2K specifically
+            .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove all control characters
+            .replace(/\r/g, '')                          // Remove carriage returns
+            .replace(/\s+/g, ' ')                        // Normalize spaces
+            .replace(/\([^)]*\)/g, '')                   // Remove text between parentheses
+            .trim();
+
+
+        return cleanText;
     };
 
-    const concatenateUint8Arrays = (array1: Uint8Array, array2: Uint8Array): Uint8Array => {
-        const result = new Uint8Array(array1.length + array2.length);
-        result.set(array1, 0);
-        result.set(array2, array1.length);
-        return result;
-    };
-
-    const processAudioBuffer = async () => {
-        if (accumulatedDataRef.current.length === 0 || processingRef.current) return;
-
-        processingRef.current = true;
-        try {
-            const audioBlob = new Blob([accumulatedDataRef.current], {
-                type: mediaRecorderRef.current?.mimeType || 'audio/webm'
-            });
-
-            const base64Audio = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    if (!reader.result) {
-                        reject(new Error('Failed to read audio data'));
-                        return;
-                    }
-                    const base64 = reader.result.toString().split(',')[1];
-                    resolve(base64);
-                };
-                reader.onerror = () => reject(reader.error);
-                reader.readAsDataURL(audioBlob);
-            });
-
-            const transcription = await window.electron.transcribeAudio(base64Audio);
-
-            if (transcription) {
-                if (transcription === runningTranscriptionRef.current) {
-                    if (headerDataRef.current) {
-                        // Reset to header data only
-                        accumulatedDataRef.current = new Uint8Array(headerDataRef.current);
-                    } else {
-                        accumulatedDataRef.current = new Uint8Array();
-                    }
-                    // Add completed transcription to blocks
-                    if (transcription.trim()) {
-                        await updateTranscription(transcription);
-                        setCurrentTranscript('');
-                    }
-                    runningTranscriptionRef.current = '';
-                } else if (transcription.trim() === '[BLANK_AUDIO]') { // [BLANK AUDIO] is the default transcription when the user stops recording. Change this to dynamic default (likely depending on model)// [BLANK AUDIO] is the default transcription when the user stops recording. Change this to dynamic default (likely depending on model
-                    runningTranscriptionRef.current = '';
-                    setCurrentTranscript('');
-                } else {
-                    runningTranscriptionRef.current = transcription;
-                    setCurrentTranscript(transcription);
-                }
-            }
-        } catch (error) {
-            console.error('Transcription error:', error);
-        } finally {
-            processingRef.current = false;
+    const processNewText = async (text: string) => {
+        const cleanedText = cleanTranscription(text);
+        if (cleanedText.includes("[Start speaking]")) {
+            return;
         }
-    };
+        if (cleanedText === "[BLANK_AUDIO]") {
+            return;
+        }
+        if ((cleanedText === "") && activeTranscriptRef.current.length > 0 && activeTranscriptRef.current !== completedTranscripts[completedTranscripts.length - 1]?.text) {
+            await updateTranscription(activeTranscriptRef.current);
+            activeTranscriptRef.current = "";
+            setActiveTranscript("");
+            return;
+        }
+        activeTranscriptRef.current = cleanedText;
+        setActiveTranscript(cleanedText);
+    }
 
     useEffect(() => {
-        let processingInterval: NodeJS.Timeout;
-
-        const startRecording = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        channelCount: 1,
-                        sampleRate: 16000
-                    }
-                });
-
-                const supportedMimeTypes = MediaRecorder.isTypeSupported;
-                const mimeType = ['audio/wav', 'audio/webm'].find(type => supportedMimeTypes(type)) || 'audio/webm';
-
-                const mediaRecorder = new MediaRecorder(stream, { mimeType });
-                mediaRecorderRef.current = mediaRecorder;
-                accumulatedDataRef.current = new Uint8Array();
-                headerDataRef.current = null;
-                runningTranscriptionRef.current = '';
-                processingRef.current = false;
-                setCurrentTranscript('');
-
-                // Flag for first chunk (contains webm header)
-                let isFirstChunk = true;
-
-                mediaRecorder.ondataavailable = async (event) => {
-                    if (event.data.size > 0) {
-                        const arrayBuffer = await event.data.arrayBuffer();
-                        const newData = new Uint8Array(arrayBuffer);
-
-                        if (isFirstChunk) {
-                            // Store header data
-                            headerDataRef.current = new Uint8Array(newData);
-                            isFirstChunk = false;
-                            accumulatedDataRef.current = new Uint8Array(newData);
-                        } else {
-                            accumulatedDataRef.current = concatenateUint8Arrays(
-                                accumulatedDataRef.current,
-                                newData
-                            );
-                        }
-
-
-                    }
-                };
-
-                mediaRecorder.start(500);
-
-                processingInterval = setInterval(() => {
-                    if (accumulatedDataRef.current.length > 0 && !processingRef.current) {
-                        processAudioBuffer();
-                    }
-                }, 500);
-
-            } catch (error) {
-                console.error('Error starting recording:', error);
-            }
-        };
-
-        const stopRecording = () => {
-            if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-                mediaRecorderRef.current.stop();
-                mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-            }
-            clearInterval(processingInterval);
-            accumulatedDataRef.current = new Uint8Array();
-            headerDataRef.current = null;
-            runningTranscriptionRef.current = '';
-            processingRef.current = false;
-            // Add the final transcript block if it exists
-            if (currentTranscript.trim()) {
-                updateTranscription(currentTranscript);
-                setCurrentTranscript('');
-            }
-        };
+        let cleanupListener: (() => void) | undefined;
 
         if (isRecording) {
-            startRecording();
+            window.electron.startRecording();
+
+            const handleTranscriptionUpdate = async (transcription: TranscriptionUpdate) => {
+                const { text } = transcription;
+
+                processNewText(text);
+            };
+
+            window.electron.onTranscriptionUpdate(handleTranscriptionUpdate);
+            cleanupListener = () => {
+                window.electron.onTranscriptionUpdate(() => { });
+            };
         } else {
-            stopRecording();
+            window.electron.stopRecording();
+
+            currentTranscriptRef.current = '';
+            setActiveTranscript('');
+
+            if (cleanupListener) {
+                cleanupListener();
+            }
         }
 
         return () => {
-            stopRecording();
+            if (cleanupListener) {
+                cleanupListener();
+            }
+            window.electron.stopRecording();
         };
-    }, [isRecording]);
+    }, [isRecording, note_uuid]);
 
-    // Auto-scroll function
     const scrollToBottom = () => {
         if (scrollContainerRef.current && !userHasScrolled) {
             scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
         }
     };
 
-    // Handle user scroll
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const container = e.currentTarget;
         const isAtBottom = Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 10;
@@ -218,7 +128,6 @@ export default function Transcription({
         }
     };
 
-    // Reset user scroll when recording starts
     useEffect(() => {
         if (isRecording) {
             setUserHasScrolled(false);
@@ -226,14 +135,12 @@ export default function Transcription({
         }
     }, [isRecording]);
 
-    // Auto-scroll when new transcripts arrive
     useEffect(() => {
         scrollToBottom();
-    }, [completedTranscripts, currentTranscript]);
+    }, [currentTranscriptRef.current, activeTranscript]);
 
     return (
         <div className="relative h-full">
-            {/* Fixed card at the bottom for transcripts */}
             {isRecording && (
                 <div className="fixed bottom-24 right-8 w-1/2 bg-white rounded-lg border border-gray-200 shadow-lg max-h-[300px] overflow-hidden">
                     <div className="p-4 border-b border-gray-200">
@@ -246,7 +153,6 @@ export default function Transcription({
                         </div>
                     </div>
 
-                    {/* Scrollable content area */}
                     <div
                         ref={scrollContainerRef}
                         onScroll={handleScroll}
@@ -260,16 +166,15 @@ export default function Transcription({
                         ))}
 
                         {/* Active Transcription */}
-                        {currentTranscript && (
+                        {activeTranscript && (
                             <div className="p-2 bg-blue-50 rounded border border-blue-100">
-                                <div className="text-gray-800 text-sm">{currentTranscript}</div>
+                                <div className="text-gray-800 text-sm">{activeTranscript}</div>
                             </div>
                         )}
                     </div>
                 </div>
             )}
 
-            {/* Recording button */}
             <button
                 onClick={() => setIsRecording(!isRecording)}
                 title="Toggle recording"

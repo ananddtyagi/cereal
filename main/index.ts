@@ -3,14 +3,12 @@ import path from 'path';
 import isDev from 'electron-is-dev';
 import Store from 'electron-store';
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs';
-import FormData from 'form-data';
-import fetch from 'node-fetch';
-import { startWhisperServer } from './startWhisperServer';
-import ffmpeg from 'fluent-ffmpeg';
+import { startWhisperServer, stopWhisperServer, writeToWhisperStream, getTranscriptionEmitter } from './startWhisperServer';
 import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
+import EventEmitter from 'events';
+
 const store = new Store();
 let mainWindow: BrowserWindow | null = null;
 const PORT = 3000;
@@ -20,6 +18,8 @@ interface TranscriptionBlock { // Figure out how to create shared types between 
     index: number;
     source: string;
 }
+
+let transcriptionEmitter: EventEmitter;
 
 // Note operations
 ipcMain.handle('get-all-notes', () => {
@@ -95,98 +95,32 @@ ipcMain.handle('get-transcription', async (_, note_uuid: string) => {
 });
 
 // Handle audio transcription
-ipcMain.handle('transcribe-audio', async (_event, base64Audio) => {
-    let webmFile: string | null = null;
-    let wavFile: string | null = null;
-
+ipcMain.handle('transcribe-audio', async (_event, audioData: string) => {
     try {
-        // Create a recordings directory in the user data directory
-        const recordingsDir = path.join(app.getPath('userData'), 'recordings');
-        if (!fs.existsSync(recordingsDir)) {
-            fs.mkdirSync(recordingsDir, { recursive: true });
-        }
-        webmFile = path.join(recordingsDir, `recording-${Date.now()}.webm`);
-        wavFile = webmFile.replace('.webm', '.wav');
+        // Convert base64 to buffer
+        const buffer = Buffer.from(audioData, 'base64');
 
-        // Convert base64 to webm file
-        const buffer = Buffer.from(base64Audio, 'base64');
-        console.log('Buffer length:', buffer.length);
-
-        // Add debug logging
-        console.log('Writing to file:', webmFile);
-        fs.writeFileSync(webmFile, buffer);
-
-        // Verify file was written
-        const stats = fs.statSync(webmFile);
-        console.log('File size:', stats.size, 'bytes');
-        console.log('File exists:', fs.existsSync(webmFile));
-
-        // Skip processing if file is too small (less than 1KB)
-        if (stats.size < 1024 || buffer.length < 1024) {
-            console.log('Audio file too short, skipping transcription');
+        // Skip if audio data is too small
+        if (buffer.length < 1024) {
             return '';
         }
 
-        // Convert WebM to WAV using ffmpeg
-        await new Promise((resolve, reject) => {
-            ffmpeg(webmFile!)
-                .toFormat('wav')
-                .outputOptions('-acodec pcm_s16le')  // 16-bit PCM encoding
-                .outputOptions('-ar 16000')          // 16kHz sample rate
-                .outputOptions('-ac 1')              // mono audio
-                .on('end', resolve)
-                .on('error', reject)
-                .save(wavFile!);
-        });
-        // Verify WAV file existence
-        console.log('Checking WAV file existence:', fs.existsSync(wavFile));
-        console.log('WAV file:', wavFile);
-
-        // Create form data with the WAV file
-        const form = new FormData();
-        form.append('file', wavFile);
-        form.append('temperature', '0.0');
-        form.append('temperature_inc', '0.2');
-        form.append('response_format', 'json');
-
-        console.log('Sending transcription request to whisper server...');
-        const response = await fetch('http://127.0.0.1:9000/inference', {
-            method: 'POST',
-            body: form,
-            headers: form.getHeaders()
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-        }
-
-        // Parse the JSON response
-        const result = await response.json();
-
-        // Return the transcribed text
-        return result.text || '';
+        // Write directly to whisper stream
+        writeToWhisperStream(buffer);
+        return '';
     } catch (error) {
         console.error('Transcription error:', error);
         throw error;
     }
-    finally {
-        // Clean up files in finally block to ensure they're always deleted
-        try {
-            // if (webmFile && fs.existsSync(webmFile)) {
-            //     fs.unlinkSync(webmFile);
-            //     console.log('Cleaned up WebM file');
-            // }
-            // if (wavFile && fs.existsSync(wavFile)) {
-            //     fs.unlinkSync(wavFile);
-            //     console.log('Cleaned up WAV file');
-            // }
-        } catch (cleanupError) {
-            console.error('Error during file cleanup:', cleanupError);
-        }
-    }
 });
 
+ipcMain.handle('start-recording', async () => {
+    await startWhisperServer();
+});
+
+ipcMain.handle('stop-recording', () => {
+    stopWhisperServer();
+});
 
 async function startNextServer() {
     if (!isDev) {
@@ -215,6 +149,9 @@ async function createWindow() {
         }
     });
 
+    // Set up transcription event handling
+    transcriptionEmitter = getTranscriptionEmitter();
+    setupTranscriptionEmitter();
     // Always use localhost:3000, in both dev and prod
     const url = `http://localhost:${PORT}`;
 
@@ -225,9 +162,20 @@ async function createWindow() {
     }
 }
 
+
+const setupTranscriptionEmitter = () => {
+    transcriptionEmitter.on('transcription-update', ({ text }) => {
+        if (!mainWindow) return;
+
+        // Send the processed transcription to the renderer
+        mainWindow.webContents.send('transcription-update', {
+            text
+        });
+    });
+}
+
 app.whenReady().then(async () => {
     await startNextServer();
-    await startWhisperServer();
     await createWindow();
 });
 

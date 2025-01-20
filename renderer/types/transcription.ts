@@ -3,3 +3,7 @@ export interface TranscriptionBlock {
     index: number;
     source: string;
 }
+
+export interface TranscriptionUpdate {
+    text: string;
+}
