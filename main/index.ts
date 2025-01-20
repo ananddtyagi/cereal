@@ -94,9 +94,6 @@ ipcMain.handle('get-transcription', async (_, note_uuid: string) => {
     return blocks;
 });
 
-// Transcription state management
-let currentTranscriptionBuffer = '';
-
 // Handle audio transcription
 ipcMain.handle('transcribe-audio', async (_event, audioData: string) => {
     try {

@@ -63,7 +63,10 @@ export default function Transcription({ note_uuid }: TranscriptionProps) {
         if (cleanedText.includes("[Start speaking]")) {
             return;
         }
-        if ((cleanedText === "" || cleanedText.trim().includes("[BLANK_AUDIO]")) && activeTranscriptRef.current.length > 0 && activeTranscriptRef.current !== completedTranscripts[completedTranscripts.length - 1]?.text) {
+        if (cleanedText === "[BLANK_AUDIO]") {
+            return;
+        }
+        if ((cleanedText === "") && activeTranscriptRef.current.length > 0 && activeTranscriptRef.current !== completedTranscripts[completedTranscripts.length - 1]?.text) {
             await updateTranscription(activeTranscriptRef.current);
             activeTranscriptRef.current = "";
             setActiveTranscript("");
