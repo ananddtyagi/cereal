@@ -7,7 +7,6 @@ interface TranscriptionProps {
 }
 
 export default function Transcription({ note_uuid }: TranscriptionProps) {
-    // Replace state with refs and add display state
     const currentTranscriptRef = useRef('');
     const [activeTranscript, setActiveTranscript] = useState('');
     const activeTranscriptRef = useRef('');
@@ -18,7 +17,6 @@ export default function Transcription({ note_uuid }: TranscriptionProps) {
 
 
     useEffect(() => {
-        // Load initial transcription
         if (note_uuid) {
             window.electron.getTranscription(note_uuid).then((transcript: TranscriptionBlock[]) => {
                 if (transcript) {
@@ -38,7 +36,6 @@ export default function Transcription({ note_uuid }: TranscriptionProps) {
     const updateTranscription = async (text: string) => {
         try {
             const updatedTranscripts = await window.electron.addToTranscription(note_uuid, text, 'mic');
-            // Get the latest transcript from the response
             if (Array.isArray(updatedTranscripts) && updatedTranscripts.length > 0) {
                 setCompletedTranscripts(updatedTranscripts);
             }
@@ -48,7 +45,6 @@ export default function Transcription({ note_uuid }: TranscriptionProps) {
     }
 
     const cleanTranscription = (text: string) => {
-        // Clean up the text
         let cleanText = text
             .replace(/\u001b\[[0-9;]*[a-zA-Z]/g, '')    // Remove ANSI escape sequences
             .replace(/\u001b\[2K/g, '')                  // Remove [2K specifically
@@ -63,12 +59,11 @@ export default function Transcription({ note_uuid }: TranscriptionProps) {
     };
 
     const processNewText = async (text: string) => {
-        console.log("Processing new text", text)
         const cleanedText = cleanTranscription(text);
         if (cleanedText.includes("[Start speaking]")) {
             return;
         }
-        if ((cleanedText === "" || cleanedText.trim().includes("[BLANK_AUDIO]")) && activeTranscriptRef.current.length > 0 && activeTranscriptRef.current !== completedTranscripts[completedTranscripts.length - 1].text) {
+        if ((cleanedText === "" || cleanedText.trim().includes("[BLANK_AUDIO]")) && activeTranscriptRef.current.length > 0 && activeTranscriptRef.current !== completedTranscripts[completedTranscripts.length - 1]?.text) {
             await updateTranscription(activeTranscriptRef.current);
             activeTranscriptRef.current = "";
             setActiveTranscript("");
@@ -97,16 +92,6 @@ export default function Transcription({ note_uuid }: TranscriptionProps) {
         } else {
             window.electron.stopRecording();
 
-            // // Save the final transcript
-            // const finalText = [currentTranscriptRef.current, activeTranscript]
-            //     .filter(Boolean)
-            //     .join(' ');
-
-            // if (finalText) {
-            //     window.electron.addToTranscription(note_uuid, finalText, 'mic');
-            // }
-
-            // Reset all state
             currentTranscriptRef.current = '';
             setActiveTranscript('');
 
@@ -123,14 +108,12 @@ export default function Transcription({ note_uuid }: TranscriptionProps) {
         };
     }, [isRecording, note_uuid]);
 
-    // Auto-scroll function
     const scrollToBottom = () => {
         if (scrollContainerRef.current && !userHasScrolled) {
             scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
         }
     };
 
-    // Handle user scroll
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const container = e.currentTarget;
         const isAtBottom = Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 10;
@@ -142,7 +125,6 @@ export default function Transcription({ note_uuid }: TranscriptionProps) {
         }
     };
 
-    // Reset user scroll when recording starts
     useEffect(() => {
         if (isRecording) {
             setUserHasScrolled(false);
@@ -150,7 +132,6 @@ export default function Transcription({ note_uuid }: TranscriptionProps) {
         }
     }, [isRecording]);
 
-    // Auto-scroll when new transcripts arrive
     useEffect(() => {
         scrollToBottom();
     }, [currentTranscriptRef.current, activeTranscript]);
